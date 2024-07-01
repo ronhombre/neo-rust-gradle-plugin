@@ -129,7 +129,7 @@ Linkedin or something. It's connected to my Github profile._**
 
 ## License (Apache 2.0)
 ```text
-Copyright 2024 on Lauren Hombre (and the neo-rust-gradle-plugin contributors)
+Copyright 2024 Ron Lauren Hombre (and the neo-rust-gradle-plugin contributors)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
