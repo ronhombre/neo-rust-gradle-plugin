@@ -78,13 +78,13 @@ rust {
 }
 
 tasks.getByName<CargoBench>("bench") {
-    //Publishing Configuration (Task-level)
+    //Benchmarking Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     noRun = true
 }
 
 tasks.getByName<CargoBuild>("build") {
-    //Publishing Configuration (Task-level)
+    //Building Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     workspace = true
 }
@@ -97,7 +97,7 @@ tasks.getByName<CargoPublish>("publish") {
 }
 
 tasks.getByName<CargoTest>("test") {
-    //Publishing Configuration (Task-level)
+    //Testing Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     testThreads = 2
 }
