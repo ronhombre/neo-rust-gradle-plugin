@@ -1,11 +1,13 @@
 package asia.hombre.neorust.internal
 
 import asia.hombre.neorust.option.CargoColor
-import asia.hombre.neorust.Rust
 import asia.hombre.neorust.extension.RustExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.TaskAction
 import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 
 open class CargoDefaultTask: DefaultTask() {
     private val pluginExtension = project.extensions.getByType(RustExtension::class.java)
@@ -45,6 +47,14 @@ open class CargoDefaultTask: DefaultTask() {
     @get:Input
     var features: String = ""
         get() = field.ifBlank { pluginExtension.features }
+
+    @get:Input
+    var manifestPath: String = ""
+        get() = field.ifBlank { pluginExtension.manifestPath }
+
+    @get:Input
+    var ignoreRustVersion: Boolean? = null
+        get() = field?: pluginExtension.ignoreRustVersion
 
     @get:Input
     var noDefaultFeatures: Boolean? = null
@@ -98,12 +108,17 @@ open class CargoDefaultTask: DefaultTask() {
     var unstableFlags: MutableList<String> = mutableListOf()
         get() = field.ifEmpty { pluginExtension.unstableFlags }
 
+    @Internal
+    internal open fun getInitialArgs(): List<String> {
+        return mutableListOf("cargo")
+    }
 
     /**
      * Internally creates a list of all the available arguments to pass to cargo.
      */
+    @Internal
     internal open fun compileArgs(): List<String> {
-        val args = mutableListOf<String>()
+        val args = getInitialArgs() as MutableList<String>
 
         if(packageSelect.isNotBlank())
             args.addAll(listOf("--package", packageSelect))
@@ -111,8 +126,7 @@ open class CargoDefaultTask: DefaultTask() {
         if(target.isNotBlank())
             args.addAll(listOf("--target", target))
 
-        if(targetDirectory != Rust.DEFAULT_TARGET_DIR.toAbsolutePath().toString())
-            args.addAll(listOf("--target-dir", targetDirectory))
+        args.addAll(listOf("--target-dir", "\"$targetDirectory\""))
 
         if(allFeatures!!)
             args.add("--all-features")
@@ -122,6 +136,11 @@ open class CargoDefaultTask: DefaultTask() {
 
         if(noDefaultFeatures!!)
             args.add("--no-default-features")
+
+        args.addAll(listOf("--manifest-path", "\"$manifestPath\""))
+
+        if(ignoreRustVersion!!)
+            args.add("--ignore-rust-version")
 
         if(locked!!)
             args.add("--locked")
@@ -155,7 +174,7 @@ open class CargoDefaultTask: DefaultTask() {
         }
 
         configPaths.forEach { path ->
-            args.addAll(listOf("--config", path.toAbsolutePath().toString()))
+            args.addAll(listOf("--config", "\"${path.absolutePathString()}\""))
         }
 
         unstableFlags.forEach { flag ->
@@ -163,5 +182,14 @@ open class CargoDefaultTask: DefaultTask() {
         }
 
         return args
+    }
+
+    @TaskAction
+    internal open fun cargoTaskAction() {
+        project.exec {
+            apply {
+                commandLine = compileArgs()
+            }
+        }
     }
 }

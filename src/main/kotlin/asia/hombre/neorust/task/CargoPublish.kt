@@ -37,16 +37,9 @@ open class CargoPublish: CargoDefaultTask() {
     var registry: String = ""
         get() = field.ifBlank { publishOptions.registry }
 
-    @TaskAction
-    fun publish() {
-        project.exec {
-            apply {
-                val args = mutableListOf("cargo", "publish")
-
-                args.addAll(compileArgs())
-
-                commandLine = args
-            }
+    override fun getInitialArgs(): List<String> {
+        return (super.getInitialArgs() as MutableList<String>).apply {
+            add("publish")
         }
     }
 

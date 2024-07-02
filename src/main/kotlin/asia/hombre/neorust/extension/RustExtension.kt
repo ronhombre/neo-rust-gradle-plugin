@@ -1,17 +1,20 @@
 package asia.hombre.neorust.extension
 
 import asia.hombre.neorust.option.CargoColor
-import asia.hombre.neorust.Rust
+import asia.hombre.neorust.RustCrate
 import asia.hombre.neorust.options.*
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import java.nio.file.Path
 import java.nio.file.Paths
 import javax.inject.Inject
 
 @Suppress("unused")
 open class RustExtension @Inject constructor(val project: Project) {
+    @Internal
+    val DEFAULT_TARGET_DIR: Path = project.layout.buildDirectory.get().asFile.resolve("target").toPath()
     /**
      * The package to publish. See cargo-pkgid(1) for the SPEC format.
      */
@@ -36,7 +39,7 @@ open class RustExtension @Inject constructor(val project: Project) {
      * environment variable, or the build.target-dir config value. Defaults to target in the root of the workspace.
      */
     @get:Input
-    var targetDirectory: String = (System.getenv("CARGO_TARGET_DIR")?.let { Paths.get(it) } ?: Rust.DEFAULT_TARGET_DIR).toAbsolutePath().toString()
+    var targetDirectory: String = (System.getenv("CARGO_TARGET_DIR")?.let { Paths.get(it) } ?: DEFAULT_TARGET_DIR).toAbsolutePath().toString()
 
     @get:Input
     var allFeatures: Boolean = false
@@ -46,6 +49,12 @@ open class RustExtension @Inject constructor(val project: Project) {
 
     @get:Input
     var noDefaultFeatures: Boolean = false
+
+    @get:Input
+    var manifestPath: String = project.layout.buildDirectory.file("Cargo.toml").get().asFile.absolutePath
+
+    @get:Input
+    var ignoreRustVersion: Boolean = false
 
     @get:Input
     var locked: Boolean = false
@@ -83,10 +92,33 @@ open class RustExtension @Inject constructor(val project: Project) {
     @get:Input
     var unstableFlags: MutableList<String> = mutableListOf()
 
+    @Internal
+    var implementationName = ""
+
+    @Internal
+    internal var dependencies: MutableList<RustCrate> = mutableListOf()
+
+    @Internal
+    var buildOnlyName = ""
+
+    @Internal
+    internal var buildDependencies: MutableList<RustCrate> = mutableListOf()
+
+    @Internal
+    var devOnlyName = ""
+
+    @Internal
+    internal var devDependencies: MutableList<RustCrate> = mutableListOf()
+
+    internal val rustManifestOptions: RustManifestOptions = RustManifestOptions(project)
     internal val rustBenchOptions: RustBenchOptions = RustBenchOptions()
     internal val rustBuildOptions: RustBuildOptions = RustBuildOptions(this)
     internal val rustPublishOptions: RustPublishOptions = RustPublishOptions()
     internal val rustTestOptions: RustTestOptions = RustTestOptions()
+
+    fun manifest(rustManifestOptions: Action<RustManifestOptions>) {
+        rustManifestOptions.execute(this.rustManifestOptions)
+    }
 
     fun building(rustBuildOptions: Action<RustBuildOptions>) {
         rustBuildOptions.execute(this.rustBuildOptions)

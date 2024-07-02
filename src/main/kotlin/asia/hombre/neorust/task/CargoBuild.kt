@@ -48,16 +48,9 @@ open class CargoBuild: CargoTargettedTask() {
     var futureIncompatReport: Boolean? = null
         get() = field?: buildOptions.futureIncompatReport
 
-    @TaskAction
-    fun build() {
-        project.exec {
-            apply {
-                val args = mutableListOf("cargo", "build")
-
-                args.addAll(compileArgs())
-
-                commandLine = args
-            }
+    override fun getInitialArgs(): List<String> {
+        return (super.getInitialArgs() as MutableList<String>).apply {
+            add("build")
         }
     }
 
@@ -126,6 +119,8 @@ open class CargoBuild: CargoTargettedTask() {
 
         if(futureIncompatReport!!)
             args.add("--future-incompat-report")
+
+        println(args.joinToString(" "))
 
         return args
     }

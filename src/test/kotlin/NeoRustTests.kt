@@ -18,7 +18,7 @@ class NeoRustTests {
         projectDir.resolve("build.gradle.kts").writeText(
             """
                 plugins {
-                    id("asia.hombre.neorust") version "0.1.1"
+                    id("asia.hombre.neorust") version "0.2.0"
                 }
             """.trimIndent())
 
@@ -34,6 +34,8 @@ class NeoRustTests {
             .withArguments("tasks")
             .build()
 
+        assertTrue(result.output.contains("resolveRustDependencies"), "Resolving Dependencies task couldn't be found!")
+        assertTrue(result.output.contains("generateCargoManifest"), "Manifest Generator task couldn't be found!")
         assertTrue(result.output.contains("benchNeoRust"), "Benchmarking task couldn't be found!")
         assertTrue(result.output.contains("buildNeoRust"), "Building task couldn't be found!")
         assertTrue(result.output.contains("cleanNeoRust"), "Cleaning task couldn't be found!")

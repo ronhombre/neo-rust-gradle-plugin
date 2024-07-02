@@ -3,7 +3,6 @@ package asia.hombre.neorust.task
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.options.RustTargetOptions
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.TaskAction
 
 /**
  * Execute benchmarks of a package
@@ -17,16 +16,10 @@ open class CargoTest: CargoBench() {
     var testThreads: Int = 0
         get() = testOptions.testThreads.takeIf { it != 0 } ?: field
 
-    @TaskAction
-    private fun test() {
-        project.exec {
-            apply {
-                val args = mutableListOf("cargo", "test")
-
-                args.addAll(compileArgs())
-
-                commandLine = args
-            }
+    override fun getInitialArgs(): List<String> {
+        return (super.getInitialArgs() as MutableList<String>).apply {
+            remove("bench")
+            add("test")
         }
     }
 

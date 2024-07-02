@@ -15,17 +15,26 @@ the project is still under development and the API might change between MINOR ve
 
 ## Features
 
-| Plugin Task    | Gradle Task      | Cargo Equivalent | Status | Since | Remarks               |
-|----------------|------------------|------------------|:------:|:-----:|:----------------------|
-| `CargoBuild`   | `gradle build`   | `cargo build`    |  Full  | 0.1.0 | Based on Cargo Docs*  |
-| N/A            | `gradle clean`   | `cargo clean`    |  Semi  | 0.1.0 | No options passable** |
-| `CargoBench`   | `gradle bench`   | `cargo bench`    |  Full  | 0.1.0 | Based on Cargo Docs*  |
-| `CargoTest`    | `gradle test`    | `cargo test`     |  Full  | 0.1.0 | Based on Cargo Docs*  |
-| `CargoPublish` | `gradle publish` | `cargo publish`  |  Full  | 0.1.0 | Based on Cargo Docs*  |
+| Plugin Task             | Gradle Task                      | Cargo Equivalent | Status | Since | Remarks                                    |
+|-------------------------|----------------------------------|------------------|:------:|:-----:|:-------------------------------------------|
+| `CargoBuild`            | `gradle build`                   | `cargo build`    |  Full  | 0.1.0 | Based on Cargo Docs*                       |
+| N/A                     | `gradle clean`                   | `cargo clean`    | BROKEN | 0.2.0 | Can't find the generated Cargo.toml**      |
+| `CargoBench`            | `gradle bench`                   | `cargo bench`    |  Full  | 0.1.0 | Based on Cargo Docs*                       |
+| `CargoTest`             | `gradle test`                    | `cargo test`     |  Full  | 0.1.0 | Based on Cargo Docs*                       |
+| `CargoPublish`          | `gradle publish`                 | `cargo publish`  |  Full  | 0.1.0 | Based on Cargo Docs*                       |
+| `CargoResolver`         | `gradle resolveRustDependencies` | N/A              |  Full  | 0.2.0 | Compiles Gradle defined rust dependencies. |
+| `CargoManifestGenerate` | `gradle generateCargoManifest`   | N/A              |  Semi  | 0.2.0 | Not all fields***                          |
+| `CargoDoc`              | `gradle rustdoc`                 | `cargo doc`      |  WIP   |  N/A  | Implementing this will break the codebase. |
+| `CargoReport`           | `gradle report`                  | `cargo report`   |  TBD   |  N/A  | Not prioritized.                           |
+| `CargoFix`              | `gradle fix`                     | `cargo fix`      |  TBD   |  N/A  | Not prioritized.                           |
 
 _*_ Based on [Cargo Docs](https://doc.rust-lang.org/cargo/commands).
 
-_**_ Executes a simple `cargo clean` command.
+_**_ It executes a simple `cargo clean` command and isn't fed any information about the location of the generated Cargo.toml.
+
+_***_ Based on [Cargo Manifest Docs](https://doc.rust-lang.org/cargo/reference/manifest.html). The implemented features
+are limited to the whole `package` section(except for `resolver` field), the whole dependency tables(except for `target`
+because of its complexity), and limited support for `lib` section.
 
 | Status  | Definition                                            |
 |---------|-------------------------------------------------------|
@@ -35,8 +44,29 @@ _**_ Executes a simple `cargo clean` command.
 | TBD     | Planned to be done in the future.                     |
 | No Plan | Avoided implementing due to design or logic reasons.  |
 
-### Status
-It can do all of the above with a Cargo.toml file included in the directory.
+### Current Status
+As of version 0.2.0, Neo Rust Gradle Plugin can build, test, benchmark, and publish(?) simple Rust projects without
+requiring a Cargo.toml file. It generates the necessary Cargo.toml during the build process based on your Gradle
+configuration.
+
+**Key capabilities:**
+- Full support for basic Cargo commands (build, test, bench, publish).
+- Gradle-style dependency management for Rust crates.
+- Custom Cargo.toml manifest generation.
+
+We're actively working on expanding support for more complex Rust project structures and additional Cargo features. If
+you need a feature now, consider contributing!
+
+## Project Structure (Similar to Java and Kotlin)
+```text
+project-root/
+├── build.gradle.kts    # Gradle build file where you configure the plugin
+├── settings.gradle.kts # Gradle settings file
+└── src/
+    └── main/
+        └── rust/
+            └── lib.rs  # Your main Rust file (location configurable)
+```
 
 ## Sample Code
 ### Gradle Kotlin DSL (build.gradle.kts)
@@ -47,12 +77,30 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.1.0"
+    id("asia.hombre.neorust") version "0.2.0"
+}
+
+dependencies {
+    implementation("crates.io:jni:0.21.1") //Becomes rustImplementation if there are conflicting plugins.
+    devOnly("crates.io:jni:0.21.1") //Becomes rustDevOnly if there are conflicting plugins.
+    buildOnly("crates.io:jni:0.21.1") //Becomes rustBuildOnly if there are conflicting plugins.
 }
 
 //Rust Configuration (Global-level)
 rust {
     target = "x86-unknown-linux-gnu"
+    
+    //This replaces the Cargo.toml and generates it in the ./build/ folder.
+    manifest {
+        packaging {
+            name = "neorust"
+            authors.add("Ron Lauren Hombre <email@example.com>")
+            edition = "2021"
+        }
+        lib {
+            crateType.add("cdylib")
+        }
+    }
 
     benchmarking {
         //Benchmarking Configuration (Top-level)
@@ -77,33 +125,33 @@ rust {
     }
 }
 
-tasks.getByName<CargoBench>("bench") {
+tasks.getByName<CargoBench>("bench") { //Becomes rustBench if conflicting a task name.
     //Benchmarking Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     noRun = true
 }
 
-tasks.getByName<CargoBuild>("build") {
+tasks.getByName<CargoBuild>("build") { //Becomes rustBuild if conflicting a task name.
     //Building Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     workspace = true
 }
 
-tasks.getByName<CargoPublish>("publish") {
+tasks.getByName<CargoPublish>("publish") { //Becomes rustPublish if conflicting a task name.
     //Publishing Configuration (Task-level)
     dryRun = true
     target = "armeabi-unknown-linux-gnu"
     token = "TOKEN"
 }
 
-tasks.getByName<CargoTest>("test") {
+tasks.getByName<CargoTest>("test") { //Becomes rustTest if conflicting a task name.
     //Testing Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     testThreads = 2
 }
 ```
 
-**Last Updated:** 0.1.0
+**Last Updated:** 0.2.0
 
 * Global-level Configurations are automatically assigned to Top-level and then Task-level Configurations.
 * Top-level Configurations override Global-level Configurations and are automatically assigned to Task-level Configurations.
@@ -113,7 +161,11 @@ Neo Rust Gradle Plugin was designed this way to allow fine-level control over th
 it.
 
 ## Requirements
-This has not been concretely determined. Please try it out and tell me if it works or not!
+* Cargo (and its dependencies)
+* Gradle
+* JDK 8.0+
+
+These haven't been concretely determined. Please try it out and tell me if it works or not!
 
 ## Contributing Steps
 1. Fork the Repository.
@@ -125,7 +177,10 @@ This has not been concretely determined. Please try it out and tell me if it wor
 7. Voila!
 
 **From Ron: _I'm looking for three active maintainers to look over the project. If you love this project, please find me on
-Linkedin or something. It's connected to my Github profile._**
+Linkedin connected to my Github Profile or the Discord Server below._**
+
+## Other Resources
+- [Support Discord Server](https://discord.gg/fwASv6XDXp)
 
 ## License (Apache 2.0)
 ```text

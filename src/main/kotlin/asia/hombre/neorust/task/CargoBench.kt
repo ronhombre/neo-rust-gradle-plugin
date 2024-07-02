@@ -26,16 +26,9 @@ open class CargoBench: CargoTargettedTask() {
     var noFailFast: Boolean? = null
         get() = field?: benchOptions.noFailFast
 
-    @TaskAction
-    fun bench() {
-        project.exec {
-            apply {
-                val args = mutableListOf("cargo", "bench")
-
-                args.addAll(compileArgs())
-
-                commandLine = args
-            }
+    override fun getInitialArgs(): List<String> {
+        return (super.getInitialArgs() as MutableList<String>).apply {
+            add("bench")
         }
     }
 

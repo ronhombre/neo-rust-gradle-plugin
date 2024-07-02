@@ -51,9 +51,7 @@ open class CargoTargettedTask: CargoDefaultTask() {
     }
 
     override fun compileArgs(): List<String> {
-        val args = mutableListOf<String>()
-
-        args.addAll(super.compileArgs())
+        val args = super.compileArgs() as MutableList<String>
 
         if(lib!!)
             args.add("--lib")
