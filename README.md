@@ -71,6 +71,7 @@ project-root/
 ## Sample Code
 ### Gradle Kotlin DSL (build.gradle.kts)
 ```kotlin
+import asia.hombre.neorust.RustCrate
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
 import asia.hombre.neorust.task.CargoPublish

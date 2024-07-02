@@ -5,16 +5,12 @@ import asia.hombre.neorust.RustCrate
 import asia.hombre.neorust.extension.RustExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
 
 open class CargoResolver: DefaultTask() {
-    @Internal
-    val hasInternet = isOnline()
-
     @TaskAction
     private fun resolve() {
         //Pass the parsed dependencies to the plugin's extension
@@ -77,7 +73,7 @@ open class CargoResolver: DefaultTask() {
         )
     }*/
 
-    private fun pingHost(hostname: String): Boolean {
+    /*private fun pingHost(hostname: String): Boolean {
         try {
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(hostname, 80), 1000)
@@ -135,5 +131,5 @@ open class CargoResolver: DefaultTask() {
         }
 
         return false
-    }
+    }*/
 }
