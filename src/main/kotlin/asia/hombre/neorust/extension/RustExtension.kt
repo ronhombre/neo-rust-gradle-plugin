@@ -1,7 +1,7 @@
 package asia.hombre.neorust.extension
 
-import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.RustCrate
+import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.*
 import org.gradle.api.Action
 import org.gradle.api.Project

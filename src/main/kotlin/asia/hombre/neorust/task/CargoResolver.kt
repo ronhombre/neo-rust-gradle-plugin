@@ -1,8 +1,8 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.Rust
-import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.RustCrate
+import asia.hombre.neorust.extension.RustExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.tasks.Internal
@@ -48,13 +48,14 @@ open class CargoResolver: DefaultTask() {
         val crates = mutableListOf<RustCrate>()
 
         config.dependencies.forEach { crate: Dependency ->
-            parseRawCrate(extension, crates, crate)
+            if(crate is RustCrate)
+                crates.add(crate)
         }
 
         return crates
     }
 
-    private fun parseRawCrate(extension: RustExtension, list: MutableList<RustCrate>, rawCrate: Dependency) {
+    /*private fun parseRawCrate(extension: RustExtension, list: MutableList<RustCrate>, rawCrate: RustCrate) {
         list.add(
             RustCrate(
                 rawCrate.name,
@@ -74,7 +75,7 @@ open class CargoResolver: DefaultTask() {
                 )
             )
         )
-    }
+    }*/
 
     private fun pingHost(hostname: String): Boolean {
         try {

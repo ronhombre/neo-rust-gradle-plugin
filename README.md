@@ -22,7 +22,7 @@ the project is still under development and the API might change between MINOR ve
 | `CargoBench`            | `gradle bench`                   | `cargo bench`    |  Full  | 0.1.0 | Based on Cargo Docs*                       |
 | `CargoTest`             | `gradle test`                    | `cargo test`     |  Full  | 0.1.0 | Based on Cargo Docs*                       |
 | `CargoPublish`          | `gradle publish`                 | `cargo publish`  |  Full  | 0.1.0 | Based on Cargo Docs*                       |
-| `CargoResolver`         | `gradle resolveRustDependencies` | N/A              |  Full  | 0.2.0 | Compiles Gradle defined rust dependencies. |
+| `CargoResolver`         | `gradle resolveRustDependencies` | N/A              |  Full  | 0.3.0 | Compiles Gradle defined rust dependencies. |
 | `CargoManifestGenerate` | `gradle generateCargoManifest`   | N/A              |  Semi  | 0.2.0 | Not all fields***                          |
 | `CargoDoc`              | `gradle rustdoc`                 | `cargo doc`      |  WIP   |  N/A  | Implementing this will break the codebase. |
 | `CargoReport`           | `gradle report`                  | `cargo report`   |  TBD   |  N/A  | Not prioritized.                           |
@@ -77,13 +77,27 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.2.0"
+    id("asia.hombre.neorust") version "0.3.0"
 }
 
 dependencies {
-    implementation("crates.io:jni:0.21.1") //Becomes rustImplementation if there are conflicting plugins.
-    devOnly("crates.io:jni:0.21.1") //Becomes rustDevOnly if there are conflicting plugins.
-    buildOnly("crates.io:jni:0.21.1") //Becomes rustBuildOnly if there are conflicting plugins.
+    //Becomes rustImplementation if there are conflicting plugins.
+    implementation(RustCrate {
+        name = "jni"
+        version = "0.21.1"
+        path = "../jni-rs"
+    })
+    //Becomes rustDevOnly if there are conflicting plugins.
+    devOnly(RustCrate {
+        name = "jni"
+        version = "0.21.1"
+        features.add("FEATURE")
+    })
+    //Becomes rustBuildOnly if there are conflicting plugins.
+    buildOnly(RustCrate {
+        name = "jni"
+        version = "0.21.1"
+    })
 }
 
 //Rust Configuration (Global-level)
@@ -151,7 +165,7 @@ tasks.getByName<CargoTest>("test") { //Becomes testRust if conflicting a task na
 }
 ```
 
-**Last Updated:** 0.2.0
+**Last Updated:** 0.3.0
 
 * Global-level Configurations are automatically assigned to Top-level and then Task-level Configurations.
 * Top-level Configurations override Global-level Configurations and are automatically assigned to Task-level Configurations.

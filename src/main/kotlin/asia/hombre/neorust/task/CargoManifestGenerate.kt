@@ -126,14 +126,34 @@ open class CargoManifestGenerate: CargoDefaultTask() {
     }
 
     private fun StringBuilder.writeCrateField(crate: RustCrate) {
-        val pathLibrary = project.layout.projectDirectory.dir(crate.registry).asFile
-        if(pathLibrary.isDirectory)
-            append("${crate.name} = { path = \"${pathLibrary.absolutePath.replace("\\", "\\\\")}\", version = \"${crate.version}\" }\n")
+        if(crate.options.path.isBlank() &&
+            crate.options.registry.isBlank() &&
+            crate.options.features.isEmpty() &&
+            crate.options.defaultFeatures &&
+            !crate.options.optional)
+            append("${crate.name} = \"${crate.version}\"\n")
         else {
-            if(crate.registry.trim() == "crates.io")
-                append("${crate.name} = \"${crate.version}\"\n")
-            else
-                append("${crate.name} = { version = \"${crate.version}\", registry = \"${crate.registry}\" }\n")
+            val crateOptions = mutableListOf<String>()
+
+            if(crate.options.version.isNotBlank())
+                crateOptions.add("version = \"${crate.options.version}\"")
+
+            if(crate.options.path.isNotBlank())
+                crateOptions.add("path = \"${crate.options.path}\"")
+
+            if(crate.options.registry.isNotBlank())
+                crateOptions.add("registry = \"${crate.options.registry}\"")
+
+            if(crate.options.features.isNotEmpty())
+                crateOptions.add("features = [${crate.options.features.joinToString(", ") { "\"$it\""}}]")
+
+            if(!crate.options.defaultFeatures)
+                crateOptions.add("default-features = false")
+
+            if(crate.options.optional)
+                crateOptions.add("optional = true")
+
+            append("${crate.name} = { ${crateOptions.joinToString(", ")} }\n")
         }
     }
 }

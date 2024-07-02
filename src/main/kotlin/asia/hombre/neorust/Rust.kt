@@ -21,7 +21,7 @@ class Rust: Plugin<Project> {
             modifyIfConflictingConfig(target, "implementation") + addIfTest()
         tryCreateConfig {
             target.configurations.create(implementationConfig) {
-                isVisible = true
+                isVisible = false
                 isTransitive = true
                 description = "Rust dependencies"
             }
@@ -33,7 +33,7 @@ class Rust: Plugin<Project> {
             modifyIfConflictingConfig(target, "devOnly") + addIfTest()
         tryCreateConfig {
             target.configurations.create(devConfig) {
-                isVisible = true
+                isVisible = false
                 isTransitive = true
                 description = "Rust Developer dependencies"
             }
@@ -45,7 +45,7 @@ class Rust: Plugin<Project> {
             modifyIfConflictingConfig(target, "buildOnly") + addIfTest()
         tryCreateConfig {
             target.configurations.create(buildConfig) {
-                isVisible = true
+                isVisible = false
                 isTransitive = true
                 description = "Rust Build dependencies"
             }
