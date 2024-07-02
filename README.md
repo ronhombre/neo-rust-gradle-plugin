@@ -125,26 +125,26 @@ rust {
     }
 }
 
-tasks.getByName<CargoBench>("bench") { //Becomes rustBench if conflicting a task name.
+tasks.getByName<CargoBench>("bench") { //Becomes benchRust if conflicting a task name.
     //Benchmarking Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     noRun = true
 }
 
-tasks.getByName<CargoBuild>("build") { //Becomes rustBuild if conflicting a task name.
+tasks.getByName<CargoBuild>("build") { //Becomes buildRust if conflicting a task name.
     //Building Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     workspace = true
 }
 
-tasks.getByName<CargoPublish>("publish") { //Becomes rustPublish if conflicting a task name.
+tasks.getByName<CargoPublish>("publish") { //Becomes publishRust if conflicting a task name.
     //Publishing Configuration (Task-level)
     dryRun = true
     target = "armeabi-unknown-linux-gnu"
     token = "TOKEN"
 }
 
-tasks.getByName<CargoTest>("test") { //Becomes rustTest if conflicting a task name.
+tasks.getByName<CargoTest>("test") { //Becomes testRust if conflicting a task name.
     //Testing Configuration (Task-level)
     target = "armeabi-unknown-linux-gnu"
     testThreads = 2
