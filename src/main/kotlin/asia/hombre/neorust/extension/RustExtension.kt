@@ -10,6 +10,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import javax.inject.Inject
 
+@Suppress("unused")
 open class RustExtension @Inject constructor(val project: Project) {
     /**
      * The package to publish. See cargo-pkgid(1) for the SPEC format.

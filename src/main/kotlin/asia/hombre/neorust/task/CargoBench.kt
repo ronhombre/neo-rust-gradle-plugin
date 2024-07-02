@@ -29,7 +29,7 @@ open class CargoBench: CargoTargettedTask() {
     @TaskAction
     fun bench() {
         project.exec {
-            it.apply {
+            apply {
                 val args = mutableListOf("cargo", "bench")
 
                 args.addAll(compileArgs())

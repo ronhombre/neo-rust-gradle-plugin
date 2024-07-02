@@ -10,7 +10,7 @@ import org.gradle.api.tasks.TaskAction
  *
  * This runs `cargo bench`
  */
-class CargoTest: CargoBench() {
+open class CargoTest: CargoBench() {
     private val testOptions = project.extensions.getByType(RustExtension::class.java).rustTestOptions
 
     @get:Input
@@ -18,9 +18,9 @@ class CargoTest: CargoBench() {
         get() = testOptions.testThreads.takeIf { it != 0 } ?: field
 
     @TaskAction
-    fun test() {
+    private fun test() {
         project.exec {
-            it.apply {
+            apply {
                 val args = mutableListOf("cargo", "test")
 
                 args.addAll(compileArgs())

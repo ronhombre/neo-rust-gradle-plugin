@@ -51,7 +51,7 @@ open class CargoBuild: CargoTargettedTask() {
     @TaskAction
     fun build() {
         project.exec {
-            it.apply {
+            apply {
                 val args = mutableListOf("cargo", "build")
 
                 args.addAll(compileArgs())

@@ -40,7 +40,7 @@ open class CargoPublish: CargoDefaultTask() {
     @TaskAction
     fun publish() {
         project.exec {
-            it.apply {
+            apply {
                 val args = mutableListOf("cargo", "publish")
 
                 args.addAll(compileArgs())

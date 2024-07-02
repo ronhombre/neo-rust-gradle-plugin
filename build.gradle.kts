@@ -1,14 +1,14 @@
 import org.jetbrains.dokka.gradle.DokkaTask
 
 plugins {
-    kotlin("jvm") version "2.0.0"
+    `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.2.1"
     id("maven-publish")
     id("org.jetbrains.dokka")  version "1.9.20" //KDocs
 }
 
 group = "asia.hombre.neorust"
-version = "0.1.0"
+version = "0.1.1"
 val officialName = "Neo Rust Gradle Plugin"
 
 repositories {
@@ -17,6 +17,8 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    testImplementation(gradleTestKit())
+    testCompileOnly(gradleApi())
 }
 
 tasks.test {
@@ -50,38 +52,6 @@ tasks.register<Jar>("javadocJar") {
 }
 
 publishing {
-    publications {
-        create<MavenPublication>("mavenKotlin") {
-            from(components["kotlin"])
-
-            artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
-
-            pom {
-                name.set(officialName)
-                description.set(project.description)
-                url.set("https://github.com/ronhombre/neo-rust-gradle-plugin")
-                groupId = project.group.toString()
-                artifactId = project.group.toString() + ".gradle.plugin"
-                version = project.version.toString()
-
-                licenses {
-                    license {
-                        name.set("The MIT License")
-                    }
-                }
-                developers {
-                    developer {
-                        name.set("Ron Lauren Hombre")
-                        email.set("ronlauren@hombre.asia")
-                    }
-                }
-                scm {
-                    url.set("https://github.com/ronhombre/neo-rust-gradle-plugin")
-                }
-            }
-        }
-    }
     repositories {
         mavenLocal()
     }
