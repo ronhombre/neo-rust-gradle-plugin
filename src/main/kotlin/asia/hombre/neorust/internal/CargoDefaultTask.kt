@@ -1,22 +1,38 @@
 package asia.hombre.neorust.internal
 
-import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.extension.RustExtension
+import asia.hombre.neorust.option.CargoColor
+import asia.hombre.neorust.task.CargoBuild
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.nio.file.Path
+import java.nio.file.Paths
+import javax.inject.Inject
 import kotlin.io.path.absolutePathString
 
-open class CargoDefaultTask: DefaultTask() {
-    private val pluginExtension = project.extensions.getByType(RustExtension::class.java)
+abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
+    @Internal
+    lateinit var ext: RustExtension
+
+    @get:Inject
+    abstract val fs: FileSystemOperations
+    @get:Inject
+    abstract val cmd: ExecOperations
+
     /**
      * The package to publish. See cargo-pkgid(1) for the SPEC format.
      */
     @get:Input
-    var packageSelect: String = ""
-        get() = field.ifBlank { pluginExtension.packageSelect }
+    @get:Optional
+    abstract val packageSelect: Property<String>
 
     /**
      * Publish for the given architecture. The default is the host architecture. The general format of the triple is
@@ -29,84 +45,84 @@ open class CargoDefaultTask: DefaultTask() {
      * separate directory. See the build cache documentation for more details.
      */
     @get:Input
-    var target: String = ""
-        get() = field.ifBlank { pluginExtension.target }
+    @get:Optional
+    abstract val target: Property<String>
 
     /**
      * Directory for all generated artifacts and intermediate files. May also be specified with the `CARGO_TARGET_DIR`
-     * environment variable, or the build.target-dir config value. Defaults to target in the root of the workspace.
+     * environment abstract variable, or the build.target-dir config value. Defaults to target in the root of the workspace.
      */
     @get:Input
-    var targetDirectory: String = ""
-        get() = field.ifBlank { pluginExtension.targetDirectory }
+    @get:Optional
+    abstract val targetDirectory: Property<String>
 
     @get:Input
-    var allFeatures: Boolean? = null
-        get() = field?: pluginExtension.allFeatures
+    @get:Optional
+    abstract val allFeatures: Property<Boolean>
 
     @get:Input
-    var features: String = ""
-        get() = field.ifBlank { pluginExtension.features }
+    @get:Optional
+    abstract val features: Property<String>
 
     @get:Input
-    var manifestPath: String = ""
-        get() = field.ifBlank { pluginExtension.manifestPath }
+    @get:Optional
+    abstract val manifestPath: Property<String>
 
     @get:Input
-    var ignoreRustVersion: Boolean? = null
-        get() = field?: pluginExtension.ignoreRustVersion
+    @get:Optional
+    abstract val ignoreRustVersion: Property<Boolean>
 
     @get:Input
-    var noDefaultFeatures: Boolean? = null
-        get() = field?: pluginExtension.noDefaultFeatures
+    @get:Optional
+    abstract val noDefaultFeatures: Property<Boolean>
 
     @get:Input
-    var locked: Boolean? = null
-        get() = field?: pluginExtension.locked
+    @get:Optional
+    abstract val locked: Property<Boolean>
 
     @get:Input
-    var offline: Boolean? = null
-        get() = field?: pluginExtension.offline
+    @get:Optional
+    abstract val offline: Property<Boolean>
 
     @get:Input
-    var frozen: Boolean? = null
-        get() = field?: pluginExtension.frozen
+    @get:Optional
+    abstract val frozen: Property<Boolean>
 
     @get:Input
-    var jobs: Int? = null
-        get() = field?: pluginExtension.jobs
+    @get:Optional
+    abstract val jobs: Property<Int>
 
     @get:Input
-    var keepGoing: Boolean? = null
-        get() = field?: pluginExtension.keepGoing
+    @get:Optional
+    abstract val keepGoing: Property<Boolean>
 
     @get:Input
-    var verbose: Boolean? = null
-        get() = field?: pluginExtension.verbose
+    @get:Optional
+    abstract val verbose: Property<Boolean>
 
     @get:Input
-    var quiet: Boolean? = null
-        get() = field?: pluginExtension.quiet
+    @get:Optional
+    abstract val quiet: Property<Boolean>
 
     @get:Input
-    var color: CargoColor = CargoColor.none
-        get() = field.takeIf { it != CargoColor.none }?: pluginExtension.color
+    @get:Optional
+    abstract val color: Property<CargoColor>
 
     @get:Input
-    var toolchain: String = ""
-        get() = field.ifBlank { pluginExtension.toolchain }
+    @get:Optional
+    abstract val toolchain: Property<String>
 
     @get:Input
-    var config: MutableMap<String, String> = mutableMapOf()
-        get() = field.ifEmpty { pluginExtension.config }
+    @get:Optional
+    abstract val config: MapProperty<String, String>
 
     @get:Input
-    var configPaths: MutableList<Path> = mutableListOf()
-        get() = field.ifEmpty { pluginExtension.configPaths }
+    @get:Optional
+    abstract val configPaths: ListProperty<Path>
 
     @get:Input
-    var unstableFlags: MutableList<String> = mutableListOf()
-        get() = field.ifEmpty { pluginExtension.unstableFlags }
+    @get:Optional
+    abstract val unstableFlags: ListProperty<String>
 
     @Internal
     internal open fun getInitialArgs(): List<String> {
@@ -120,68 +136,88 @@ open class CargoDefaultTask: DefaultTask() {
     internal open fun compileArgs(): List<String> {
         val args = getInitialArgs() as MutableList<String>
 
-        if(packageSelect.isNotBlank())
-            args.addAll(listOf("--package", packageSelect))
+        packageSelect.apply {
+            if(isPresent && get().isNotBlank())
+                args.addAll(listOf("--package", get()))
+        }
 
-        if(target.isNotBlank())
-            args.addAll(listOf("--target", target))
+        target.apply {
+            if(isPresent && get().isNotBlank())
+                args.addAll(listOf("--target", get()))
+        }
 
-        args.addAll(listOf("--target-dir", "\"$targetDirectory\""))
+        targetDirectory.apply {
+            if(isPresent && get().isNotBlank())
+                args.addAll(listOf("--target-dir", get()))
+        }
 
-        if(allFeatures!!)
+        if(allFeatures.getOrElse(false))
             args.add("--all-features")
 
-        if(features.isNotBlank() && !allFeatures!!)
-            args.addAll(listOf("--features", features))
+        features.apply {
+            if(isPresent && allFeatures.getOrElse(false))
+                args.addAll(listOf("--features", get()))
+        }
 
-        if(noDefaultFeatures!!)
+        if(noDefaultFeatures.getOrElse(false))
             args.add("--no-default-features")
 
-        args.addAll(listOf("--manifest-path", "\"$manifestPath\""))
+        manifestPath.apply {
+            if(isPresent && get().isNotBlank())
+                args.addAll(listOf("--manifest-path", get()))
+        }
 
-        if(ignoreRustVersion!!)
+        if(ignoreRustVersion.getOrElse(false))
             args.add("--ignore-rust-version")
 
-        if(locked!!)
+        if(locked.getOrElse(false))
             args.add("--locked")
 
-        if(offline!!)
+        if(offline.getOrElse(false))
             args.add("--offline")
 
-        if(frozen!!)
+        if(frozen.getOrElse(false))
             args.add("--frozen")
 
-        if(jobs != 0)
-            args.addAll(listOf("--jobs", jobs.toString()))
+        if(jobs.isPresent)
+            args.addAll(listOf("--jobs", jobs.get().toString()))
 
-        if(keepGoing!!)
+        if(keepGoing.getOrElse(false))
             args.add("--keep-going")
 
-        if(verbose!!)
+        if(verbose.getOrElse(false))
             args.add("--verbose")
 
-        if(quiet!!)
+        if(quiet.getOrElse(false))
             args.add("--quiet")
 
-        if(color != CargoColor.none)
-            args.addAll(listOf("--color", color.name))
+        if(color.isPresent)
+            args.addAll(listOf("--color", color.get().name))
 
-        if(toolchain.isNotBlank())
-            args.add("+$toolchain")
+        toolchain.apply {
+            if(isPresent && get().isNotBlank())
+                args.add("+${toolchain.get()}")
+        }
 
-        config.forEach { (t, u) ->
+        if(config.isPresent) config.get().forEach { (t, u) ->
             args.addAll(listOf("--config", "$t=$u"))
         }
 
-        configPaths.forEach { path ->
+        if(configPaths.isPresent) configPaths.get().forEach { path ->
             args.addAll(listOf("--config", "\"${path.absolutePathString()}\""))
         }
 
-        unstableFlags.forEach { flag ->
+        if(unstableFlags.isPresent) unstableFlags.get().forEach { flag ->
             args.addAll(listOf("-Z", flag))
         }
 
         return args
+    }
+
+    fun run() {
+        cmd.exec {
+            commandLine = compileArgs()
+        }
     }
 
     @TaskAction
@@ -191,5 +227,6 @@ open class CargoDefaultTask: DefaultTask() {
                 commandLine = compileArgs()
             }
         }
+        run()
     }
 }

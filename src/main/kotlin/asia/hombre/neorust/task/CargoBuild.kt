@@ -1,52 +1,47 @@
 package asia.hombre.neorust.task
 
+import asia.hombre.neorust.internal.CargoTargettedTask
 import asia.hombre.neorust.option.CargoMessageFormat
 import asia.hombre.neorust.option.CargoTiming
-import asia.hombre.neorust.extension.RustExtension
-import asia.hombre.neorust.internal.CargoTargettedTask
-import asia.hombre.neorust.options.RustTargetOptions
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.Optional
+import javax.inject.Inject
 
 /**
  * Compile the current package
  *
  * This runs `cargo build`
  */
-open class CargoBuild: CargoTargettedTask() {
-    private val buildOptions = project.extensions.getByType(RustExtension::class.java).rustBuildOptions
-
+abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     @get:Input
-    var workspace: Boolean? = null
-        get() = field?: buildOptions.workspace
-
+    @get:Optional
+    abstract val workspace: Property<Boolean>
     @get:Input
-    var exclude: MutableList<String> = mutableListOf()
-        get() = field.ifEmpty { buildOptions.exclude }
-
+    @get:Optional
+    abstract val exclude: ListProperty<String>
     @get:Input
-    var release: Boolean? = null
-        get() = field?: buildOptions.release
-
+    @get:Optional
+    abstract val release: Property<Boolean>
     @get:Input
-    var profile: String = ""
-        get() = field.ifBlank { buildOptions.profile }
-
+    @get:Optional
+    abstract val profile: Property<String>
     @get:Input
-    var timings: CargoTiming = CargoTiming.none
-        get() = field.takeIf { it != CargoTiming.none }?: buildOptions.timings
-
+    @get:Optional
+    abstract val timings: Property<CargoTiming>
     @get:Input
-    var messageFormat: MutableList<CargoMessageFormat> = mutableListOf()
-        get() = field.ifEmpty { buildOptions.messageFormat }
-
+    @get:Optional
+    abstract val messageFormat: ListProperty<CargoMessageFormat>
     @get:Input
-    var buildPlan: Boolean? = null
-        get() = field?: buildOptions.buildPlan
-
+    @get:Optional
+    abstract val buildPlan: Property<Boolean>
     @get:Input
-    var futureIncompatReport: Boolean? = null
-        get() = field?: buildOptions.futureIncompatReport
+    @get:Optional
+    abstract val buildAll: Property<Boolean>
+    @get:Input
+    @get:Optional
+    abstract val futureIncompatReport: Property<Boolean>
 
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
@@ -57,75 +52,73 @@ open class CargoBuild: CargoTargettedTask() {
     override fun compileArgs(): List<String> {
         val args: MutableList<String> = super.compileArgs() as MutableList<String>
 
-        if(workspace!!)
+        if(workspace.getOrElse(false))
             args.add("--workspace")
 
-        exclude.forEach { excluded ->
+        if(exclude.isPresent) exclude.get().forEach { excluded ->
             args.addAll(listOf("--exclude", excluded))
         }
 
-        if(release!!)
+        if(release.getOrElse(false))
             args.add("--release")
 
-        if(profile.isNotBlank())
-            args.addAll(listOf("--profile", profile))
+        profile.apply {
+            if(isPresent && get().isNotBlank())
+                args.addAll(listOf("--profile", get()))
+        }
 
-        if(timings != CargoTiming.none)
-            when(timings) {
-                CargoTiming.none -> {}
-                CargoTiming.default -> args.add("--timings")
-                CargoTiming.html -> args.add("--timings=html")
-                CargoTiming.json -> args.add("--timings=json")
-                CargoTiming.html_and_json -> args.add("--timings=html,json")
-            }
+        when(timings.getOrElse(CargoTiming.none)) {
+            CargoTiming.none -> {}
+            CargoTiming.default -> args.add("--timings")
+            CargoTiming.html -> args.add("--timings=html")
+            CargoTiming.json -> args.add("--timings=json")
+            CargoTiming.html_and_json -> args.add("--timings=html,json")
+        }
 
-        messageFormat.forEach { format ->
+        if(messageFormat.isPresent) messageFormat.get().forEach { format ->
             when(format) {
                 CargoMessageFormat.human -> {
-                    if(messageFormat.contains(CargoMessageFormat.short) ||
-                        messageFormat.contains(CargoMessageFormat.json) ||
-                        messageFormat.contains(CargoMessageFormat.json_diagnostic_short) ||
-                        messageFormat.contains(CargoMessageFormat.json_diagnostic_rendered_ansi) ||
-                        messageFormat.contains(CargoMessageFormat.json_render_diagnostics))
+                    if(messageFormat.get().contains(CargoMessageFormat.short) ||
+                        messageFormat.get().contains(CargoMessageFormat.json) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_diagnostic_short) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_diagnostic_rendered_ansi) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_render_diagnostics))
                         throw IllegalArgumentException("The format '" + format.name + "' conflicts with another format!")
                 }
                 CargoMessageFormat.short -> {
-                    if(messageFormat.contains(CargoMessageFormat.human) ||
-                        messageFormat.contains(CargoMessageFormat.json) ||
-                        messageFormat.contains(CargoMessageFormat.json_diagnostic_short) ||
-                        messageFormat.contains(CargoMessageFormat.json_diagnostic_rendered_ansi) ||
-                        messageFormat.contains(CargoMessageFormat.json_render_diagnostics))
+                    if(messageFormat.get().contains(CargoMessageFormat.human) ||
+                        messageFormat.get().contains(CargoMessageFormat.json) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_diagnostic_short) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_diagnostic_rendered_ansi) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_render_diagnostics))
                         throw IllegalArgumentException("The format '" + format.name + "' conflicts with another format!")
                 }
                 CargoMessageFormat.json,
                 CargoMessageFormat.json_diagnostic_short,
                 CargoMessageFormat.json_diagnostic_rendered_ansi,
                 CargoMessageFormat.json_render_diagnostics -> {
-                    if(messageFormat.contains(CargoMessageFormat.human) ||
-                        messageFormat.contains(CargoMessageFormat.json) ||
-                        messageFormat.contains(CargoMessageFormat.json_diagnostic_short) ||
-                        messageFormat.contains(CargoMessageFormat.json_diagnostic_rendered_ansi) ||
-                        messageFormat.contains(CargoMessageFormat.json_render_diagnostics))
+                    if(messageFormat.get().contains(CargoMessageFormat.human) ||
+                        messageFormat.get().contains(CargoMessageFormat.json) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_diagnostic_short) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_diagnostic_rendered_ansi) ||
+                        messageFormat.get().contains(CargoMessageFormat.json_render_diagnostics))
                         throw IllegalArgumentException("The format '" + format.name + "' conflicts with another format!")
                 }
+                else -> logger.warn("Unexpected `null` value for `messageFormat`!")
             }
         }
 
-        if(messageFormat.isNotEmpty())
-            args.addAll(listOf("--message-format", messageFormat.joinToString(",") { format -> format.name }))
+        messageFormat.apply {
+            if(isPresent && get().isNotEmpty())
+                args.addAll(listOf("--message-format", get().joinToString(",") { format -> format.name }))
+        }
 
-        if(buildPlan!!)
+        if(buildPlan.getOrElse(false))
             args.add("--build-plan")
 
-        if(futureIncompatReport!!)
+        if(futureIncompatReport.getOrElse(false))
             args.add("--future-incompat-report")
 
-        println(args.joinToString(" "))
-
         return args
-    }
-
-    override fun getTargetOptions(): RustTargetOptions {
-        return buildOptions
     }
 }

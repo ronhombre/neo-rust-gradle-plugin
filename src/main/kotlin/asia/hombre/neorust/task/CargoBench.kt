@@ -1,30 +1,26 @@
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoTargettedTask
-import asia.hombre.neorust.options.RustTargetOptions
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.Optional
+import javax.inject.Inject
 
 /**
  * Execute benchmarks of a package
  *
  * This runs `cargo bench`
  */
-open class CargoBench: CargoTargettedTask() {
-    private val benchOptions = project.extensions.getByType(RustExtension::class.java).rustBenchOptions
-
+abstract class CargoBench @Inject constructor(): CargoTargettedTask() {
     @get:Input
-    var noRun: Boolean? = null
-        get() = field?: benchOptions.noRun
-
+    @get:Optional
+    abstract val noRun: Property<Boolean>
     @get:Input
-    var noCapture: Boolean? = null
-        get() = field?: benchOptions.noCapture
-
+    @get:Optional
+    abstract val noCapture: Property<Boolean>
     @get:Input
-    var noFailFast: Boolean? = null
-        get() = field?: benchOptions.noFailFast
+    @get:Optional
+    abstract val noFailFast: Property<Boolean>
 
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
@@ -35,19 +31,15 @@ open class CargoBench: CargoTargettedTask() {
     override fun compileArgs(): List<String> {
         val args: MutableList<String> = super.compileArgs() as MutableList<String>
 
-        if(noRun!!)
+        if(noRun.getOrElse(false))
             args.add("--no-run")
 
-        if(noCapture!!)
+        if(noCapture.getOrElse(false))
             args.add("--nocapture")
 
-        if(noFailFast!!)
+        if(noFailFast.getOrElse(false))
             args.add("--no-fail-fast")
 
         return args
-    }
-
-    override fun getTargetOptions(): RustTargetOptions {
-        return benchOptions
     }
 }

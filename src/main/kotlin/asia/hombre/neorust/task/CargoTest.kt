@@ -1,20 +1,19 @@
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.extension.RustExtension
-import asia.hombre.neorust.options.RustTargetOptions
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
+import javax.inject.Inject
 
 /**
  * Execute benchmarks of a package
  *
  * This runs `cargo bench`
  */
-open class CargoTest: CargoBench() {
-    private val testOptions = project.extensions.getByType(RustExtension::class.java).rustTestOptions
-
+abstract class CargoTest @Inject constructor(): CargoBench() {
     @get:Input
-    var testThreads: Int = 0
-        get() = testOptions.testThreads.takeIf { it != 0 } ?: field
+    @get:Optional
+    abstract val testThreads: Property<Int>
 
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
@@ -26,13 +25,9 @@ open class CargoTest: CargoBench() {
     override fun compileArgs(): List<String> {
         val args: MutableList<String> = super.compileArgs() as MutableList<String>
 
-        if(testThreads > 0)
-            args.add("--test-threads=$testThreads")
+        if(testThreads.isPresent)
+            args.add("--test-threads=${testThreads.get()}")
 
         return args
-    }
-
-    override fun getTargetOptions(): RustTargetOptions {
-        return testOptions
     }
 }

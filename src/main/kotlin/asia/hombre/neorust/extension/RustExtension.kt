@@ -1,25 +1,28 @@
 package asia.hombre.neorust.extension
 
-import asia.hombre.neorust.RustCrate
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.*
-import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import java.nio.file.Path
-import java.nio.file.Paths
 import javax.inject.Inject
 
 @Suppress("unused")
-open class RustExtension @Inject constructor(val project: Project) {
-    @Internal
-    val DEFAULT_TARGET_DIR: Path = project.layout.buildDirectory.get().asFile.resolve("target").toPath()
+abstract class RustExtension @Inject constructor(project: Project) {
+    private val objects: ObjectFactory = project.objects
+
     /**
      * The package to publish. See cargo-pkgid(1) for the SPEC format.
      */
     @get:Input
-    var packageSelect: String = ""
+    @get:Optional
+    abstract val packageSelect: Property<String>
 
     /**
      * Publish for the given architecture. The default is the host architecture. The general format of the triple is
@@ -32,107 +35,129 @@ open class RustExtension @Inject constructor(val project: Project) {
      * separate directory. See the build cache documentation for more details.
      */
     @get:Input
-    var target: String = ""
+    @get:Optional
+    abstract val target: Property<String>
 
     /**
      * Directory for all generated artifacts and intermediate files. May also be specified with the `CARGO_TARGET_DIR`
      * environment variable, or the build.target-dir config value. Defaults to target in the root of the workspace.
      */
     @get:Input
-    var targetDirectory: String = (System.getenv("CARGO_TARGET_DIR")?.let { Paths.get(it) } ?: DEFAULT_TARGET_DIR).toAbsolutePath().toString()
+    @get:Optional
+    abstract val targetDirectory: Property<String>
 
     @get:Input
-    var allFeatures: Boolean = false
+    @get:Optional
+    abstract val allFeatures: Property<Boolean>
 
     @get:Input
-    var features: String = ""
+    @get:Optional
+    abstract val features: Property<String>
 
     @get:Input
-    var noDefaultFeatures: Boolean = false
+    @get:Optional
+    abstract val featuresList: MapProperty<String, List<String>>
 
     @get:Input
-    var manifestPath: String = project.layout.buildDirectory.file("Cargo.toml").get().asFile.absolutePath
+    @get:Optional
+    abstract val noDefaultFeatures: Property<Boolean>
 
     @get:Input
-    var ignoreRustVersion: Boolean = false
+    abstract val manifestPath: Property<String>
 
     @get:Input
-    var locked: Boolean = false
+    @get:Optional
+    abstract val ignoreRustVersion: Property<Boolean>
 
     @get:Input
-    var offline: Boolean = false
+    @get:Optional
+    abstract val locked: Property<Boolean>
 
     @get:Input
-    var frozen: Boolean = false
+    @get:Optional
+    abstract val offline: Property<Boolean>
 
     @get:Input
-    var jobs: Int = 0
+    @get:Optional
+    abstract val frozen: Property<Boolean>
 
     @get:Input
-    var keepGoing: Boolean = false
+    @get:Optional
+    abstract val jobs: Property<Int>
 
     @get:Input
-    var verbose: Boolean = false
+    @get:Optional
+    abstract val keepGoing: Property<Boolean>
 
     @get:Input
-    var quiet: Boolean = false
+    @get:Optional
+    abstract val verbose: Property<Boolean>
 
     @get:Input
-    var color: CargoColor = CargoColor.none
+    @get:Optional
+    abstract val quiet: Property<Boolean>
 
     @get:Input
-    var toolchain: String = ""
+    @get:Optional
+    abstract val color: Property<CargoColor>
 
     @get:Input
-    var config: MutableMap<String, String> = mutableMapOf()
+    @get:Optional
+    abstract val toolchain: Property<String>
 
     @get:Input
-    var configPaths: MutableList<Path> = mutableListOf()
+    @get:Optional
+    abstract val config: MapProperty<String, String>
 
     @get:Input
-    var unstableFlags: MutableList<String> = mutableListOf()
+    @get:Optional
+    abstract val configPaths: ListProperty<Path>
 
-    @Internal
+    @get:Input
+    @get:Optional
+    abstract val unstableFlags: ListProperty<String>
+
+    init {
+        manifestPath.convention(project.layout.buildDirectory.file("Cargo.toml").get().asFile.absolutePath)
+    }
+
+    /*@Internal
     var implementationName = ""
-
-    @Internal
-    internal var dependencies: MutableList<RustCrate> = mutableListOf()
-
     @Internal
     var buildOnlyName = ""
+    @Internal
+    var devOnlyName = ""*/
 
     @Internal
-    internal var buildDependencies: MutableList<RustCrate> = mutableListOf()
-
+    internal val rustTargetOptions: RustTargetOptions = objects.newInstance(
+        RustTargetOptions::class.java
+    )
     @Internal
-    var devOnlyName = ""
-
+    internal val rustManifestOptions: RustManifestOptions = objects.newInstance(
+        RustManifestOptions::class.java
+    )
     @Internal
-    internal var devDependencies: MutableList<RustCrate> = mutableListOf()
-
-    internal val rustManifestOptions: RustManifestOptions = RustManifestOptions(project)
-    internal val rustBenchOptions: RustBenchOptions = RustBenchOptions()
-    internal val rustBuildOptions: RustBuildOptions = RustBuildOptions(this)
-    internal val rustPublishOptions: RustPublishOptions = RustPublishOptions()
-    internal val rustTestOptions: RustTestOptions = RustTestOptions()
-
-    fun manifest(rustManifestOptions: Action<RustManifestOptions>) {
-        rustManifestOptions.execute(this.rustManifestOptions)
-    }
-
-    fun building(rustBuildOptions: Action<RustBuildOptions>) {
-        rustBuildOptions.execute(this.rustBuildOptions)
-    }
-
-    fun benchmarking(rustBenchOptions: Action<RustBenchOptions>) {
-        rustBenchOptions.execute(this.rustBenchOptions)
-    }
-
-    fun publishing(rustPublishOptions: Action<RustPublishOptions>) {
-        rustPublishOptions.execute(this.rustPublishOptions)
-    }
-
-    fun testing(rustTestOptions: Action<RustTestOptions>) {
-        rustTestOptions.execute(this.rustTestOptions)
-    }
+    internal val rustBenchOptions: RustBenchOptions = objects.newInstance(
+        RustBenchOptions::class.java
+    )
+    @Internal
+    internal val rustBuildOptions: RustBuildOptions = objects.newInstance(
+        RustBuildOptions::class.java
+    )
+    @Internal
+    internal val rustPublishOptions: RustPublishOptions = objects.newInstance(
+        RustPublishOptions::class.java
+    )
+    @Internal
+    internal val rustTestOptions: RustTestOptions = objects.newInstance(
+        RustTestOptions::class.java
+    )
+    @Internal
+    internal val rustBinaryOptions: RustBinaryOptions = objects.newInstance(
+        RustBinaryOptions::class.java
+    )
+    @Internal
+    internal val rustBuildTargetOptions: RustBuildTargetOptions = objects.newInstance(
+        RustBuildTargetOptions::class.java
+    )
 }

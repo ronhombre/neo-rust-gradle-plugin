@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "asia.hombre.neorust"
-version = "0.3.0"
+version = "0.4.0-experimental"
 val officialName = "Neo Rust Gradle Plugin"
 
 repositories {
@@ -24,8 +24,9 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(8)
 }
 
 gradlePlugin {
@@ -72,7 +73,7 @@ tasks.dokkaHtml.configure {
 tasks.withType<DokkaTask>().configureEach {
     val dokkaBaseConfiguration = """
     {
-      "footerMessage": "(C) 2024 Ron Lauren Hombre"
+      "footerMessage": "(C) 2025 Ron Lauren Hombre"
     }
     """
     pluginsMapConfiguration.set(

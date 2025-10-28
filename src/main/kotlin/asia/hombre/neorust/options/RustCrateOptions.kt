@@ -1,26 +1,25 @@
 package asia.hombre.neorust.options
 
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
+import javax.inject.Inject
 
-class RustCrateOptions {
+abstract class RustCrateOptions @Inject constructor(internal val name: String, internal val version: String) {
     @get:Input
-    var name: String = ""
-
+    @get:Optional
+    abstract val path: Property<String>
     @get:Input
-    var version: String = ""
-
+    @get:Optional
+    abstract val registry: Property<String>
     @get:Input
-    var path: String = ""
-
+    @get:Optional
+    abstract val features: ListProperty<String>
     @get:Input
-    var registry: String = ""
-
+    @get:Optional
+    abstract val defaultFeatures: Property<Boolean>
     @get:Input
-    var features = mutableListOf<String>()
-
-    @get:Input
-    var defaultFeatures: Boolean = true
-
-    @get:Input
-    var optional: Boolean = false
+    @get:Optional
+    abstract val optional: Property<Boolean>
 }

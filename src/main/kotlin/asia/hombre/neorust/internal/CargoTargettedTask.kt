@@ -1,90 +1,100 @@
 package asia.hombre.neorust.internal
 
-import asia.hombre.neorust.options.RustTargetOptions
+import asia.hombre.neorust.options.RustBinaryOptions
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
+import javax.inject.Inject
 
-open class CargoTargettedTask: CargoDefaultTask() {
+abstract class CargoTargettedTask @Inject constructor(): CargoDefaultTask() {
     @get:Input
-    var lib: Boolean? = null
-        get() = field?: getTargetOptions().lib
-
-    @get:Input
-    var bin: MutableList<String> = mutableListOf()
-        get() = field.ifEmpty { getTargetOptions().bin }
+    @get:Optional
+    abstract val lib: Property<Boolean>
 
     @get:Input
-    var bins: Boolean? = null
-        get() = field?: getTargetOptions().bins
+    @get:Optional
+    abstract val bin: ListProperty<RustBinaryOptions.Binary>
 
     @get:Input
-    var example: MutableList<String> = mutableListOf()
-        get() = field.ifEmpty { getTargetOptions().example }
+    @get:Optional
+    abstract val bins: Property<Boolean>
 
     @get:Input
-    var examples: Boolean? = null
-        get() = field?: getTargetOptions().examples
+    @get:Optional
+    abstract val example: ListProperty<String>
 
     @get:Input
-    var test: MutableList<String> = mutableListOf()
-        get() = field.ifEmpty { getTargetOptions().test }
+    @get:Optional
+    abstract val examples: Property<Boolean>
 
     @get:Input
-    var tests: Boolean? = null
-        get() = field?: getTargetOptions().tests
+    @get:Optional
+    abstract val test: ListProperty<String>
 
     @get:Input
-    var bench: MutableList<String> = mutableListOf()
-        get() = field.ifEmpty { getTargetOptions().bench }
+    @get:Optional
+    abstract val tests: Property<Boolean>
 
     @get:Input
-    var benches: Boolean? = null
-        get() = field?: getTargetOptions().benches
+    @get:Optional
+    abstract val bench: ListProperty<String>
 
     @get:Input
-    var allTargets: Boolean? = null
-        get() = field?: getTargetOptions().allTargets
+    @get:Optional
+    abstract val benches: Property<Boolean>
 
-    @Internal
-    internal open fun getTargetOptions(): RustTargetOptions {
-        return RustTargetOptions()
-    }
+    @get:Input
+    @get:Optional
+    abstract val allTargets: Property<Boolean>
 
     override fun compileArgs(): List<String> {
         val args = super.compileArgs() as MutableList<String>
 
-        if(lib!!)
+        if(lib.getOrElse(false))
             args.add("--lib")
 
-        bin.forEach { bin ->
-            args.addAll(listOf("--bin", bin))
+        bin.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--bin")
+                args.addAll(get().map { it.name.get() })
+            }
         }
 
-        if(bins!!)
+        if(bins.getOrElse(false))
             args.add("--bins")
 
-        example.forEach { example ->
-            args.addAll(listOf("--example", example))
+        example.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--example")
+                args.addAll(get())
+            }
         }
 
-        if(examples!!)
+        if(examples.getOrElse(false))
             args.add("--examples")
 
-        test.forEach { test ->
-            args.addAll(listOf("--test", test))
+        test.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--test")
+                args.addAll(get())
+            }
         }
 
-        if(tests!!)
+        if(tests.getOrElse(false))
             args.add("--tests")
 
-        bench.forEach { bench ->
-            args.addAll(listOf("--bench", bench))
+        bench.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--bench")
+                args.addAll(get())
+            }
         }
 
-        if(benches!!)
+        if(benches.getOrElse(false))
             args.add("--benches")
 
-        if(allTargets!!)
+        if(allTargets.getOrElse(false))
             args.add("--all-targets")
 
         return args
