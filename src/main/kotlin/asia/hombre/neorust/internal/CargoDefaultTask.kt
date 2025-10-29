@@ -3,7 +3,6 @@ package asia.hombre.neorust.internal
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.CargoColor
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
@@ -20,8 +19,6 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     @Internal
     lateinit var ext: RustExtension
 
-    @get:Inject
-    abstract val fs: FileSystemOperations
     @get:Inject
     abstract val cmd: ExecOperations
 
@@ -214,7 +211,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     fun run() {
         cmd.exec {
-            commandLine = compileArgs()
+            commandLine = compileArgs().also { println(it) }
         }
     }
 
