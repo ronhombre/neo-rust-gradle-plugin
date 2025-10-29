@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "asia.hombre.neorust"
-version = "0.4.0-experimental"
+version = "0.4.0"
 val officialName = "Neo Rust Gradle Plugin"
 
 repositories {
