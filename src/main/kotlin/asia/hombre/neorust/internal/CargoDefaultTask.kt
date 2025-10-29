@@ -2,7 +2,6 @@ package asia.hombre.neorust.internal
 
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.CargoColor
-import asia.hombre.neorust.task.CargoBuild
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.ListProperty
@@ -14,7 +13,6 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import java.nio.file.Path
-import java.nio.file.Paths
 import javax.inject.Inject
 import kotlin.io.path.absolutePathString
 
@@ -222,11 +220,6 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     @TaskAction
     internal open fun cargoTaskAction() {
-        project.exec {
-            apply {
-                commandLine = compileArgs()
-            }
-        }
         run()
     }
 }
