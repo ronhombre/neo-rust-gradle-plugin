@@ -126,13 +126,12 @@ class Rust: Plugin<Project> {
         var cleanTask = "clean" + addIfTest()
         cleanTask += addIfConflictingTask(target, cleanTask)
         tryRegisterTask {
-            target.tasks.register(cleanTask, Exec::class.java) {
+            target.tasks.register(cleanTask, CargoClean::class.java) {
                 dependsOn("findCargo")
                 group = "build"
-
-                commandLine("cargo", "clean")
-
-                errorOutput = System.out
+                this.ext = extension
+                setDefaultProperties()
+                setTargettedProperties()
             }
         }
 
