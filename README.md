@@ -15,23 +15,21 @@ the project is still under development and the API might change between MINOR ve
 
 ## Features
 
-| Plugin Task             | Gradle Task                      | Cargo Equivalent | Status | Since | Remarks                                    |
-|-------------------------|----------------------------------|------------------|:------:|:-----:|:-------------------------------------------|
-| `CargoBuild`            | `gradle build`                   | `cargo build`    |  Full  | 0.1.0 | Based on Cargo Docs*                       |
-| N/A                     | `gradle clean`                   | `cargo clean`    | BROKEN | 0.2.0 | Can't find the generated Cargo.toml**      |
-| `CargoBench`            | `gradle bench`                   | `cargo bench`    |  Full  | 0.1.0 | Based on Cargo Docs*                       |
-| `CargoTest`             | `gradle test`                    | `cargo test`     |  Full  | 0.1.0 | Based on Cargo Docs*                       |
-| `CargoPublish`          | `gradle publish`                 | `cargo publish`  |  Full  | 0.1.0 | Based on Cargo Docs*                       |
-| `CargoManifestGenerate` | `gradle generateCargoManifest`   | N/A              |  Semi  | 0.2.0 | Not all fields***                          |
-| `CargoDoc`              | `gradle rustdoc`                 | `cargo doc`      |  WIP   |  N/A  | Will be implemented soon.                  |
-| `CargoReport`           | `gradle report`                  | `cargo report`   |  TBD   |  N/A  | Not prioritized.                           |
-| `CargoFix`              | `gradle fix`                     | `cargo fix`      |  TBD   |  N/A  | Not prioritized.                           |
+| Plugin Task             | Gradle Task                      | Cargo Equivalent | Status | Since | Remarks                   |
+|-------------------------|----------------------------------|------------------|:------:|:-----:|:--------------------------|
+| `CargoBuild`            | `gradle build`                   | `cargo build`    |  Full  | 0.1.0 | Based on Cargo Docs*      |
+| `CargoClean`            | `gradle clean`                   | `cargo clean`    |  Full  | 0.4.0 | Based on Cargo Docs*      |
+| `CargoBench`            | `gradle bench`                   | `cargo bench`    |  Full  | 0.1.0 | Based on Cargo Docs*      |
+| `CargoTest`             | `gradle test`                    | `cargo test`     |  Full  | 0.1.0 | Based on Cargo Docs*      |
+| `CargoPublish`          | `gradle publish`                 | `cargo publish`  |  Full  | 0.1.0 | Based on Cargo Docs*      |
+| `CargoManifestGenerate` | `gradle generateCargoManifest`   | N/A              |  Semi  | 0.2.0 | Not all fields**          |
+| `CargoDoc`              | `gradle rustdoc`                 | `cargo doc`      |  WIP   |  N/A  | Will be implemented soon. |
+| `CargoReport`           | `gradle report`                  | `cargo report`   |  TBD   |  N/A  | Not prioritized.          |
+| `CargoFix`              | `gradle fix`                     | `cargo fix`      |  TBD   |  N/A  | Not prioritized.          |
 
 _*_ Based on [Cargo Docs](https://doc.rust-lang.org/cargo/commands).
 
-_**_ It executes a simple `cargo clean` command and isn't fed any information about the location of the generated Cargo.toml.
-
-_***_ Based on [Cargo Manifest Docs](https://doc.rust-lang.org/cargo/reference/manifest.html). The implemented features
+_**_ Based on [Cargo Manifest Docs](https://doc.rust-lang.org/cargo/reference/manifest.html). The implemented features
 are limited to the whole `package` section(except for `resolver` field), the whole dependency tables(except for `target`
 because of its complexity), and limited support for `lib` section.
 
