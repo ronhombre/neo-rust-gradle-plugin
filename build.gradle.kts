@@ -1,10 +1,11 @@
-import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 
 plugins {
     `kotlin-dsl`
-    id("com.gradle.plugin-publish") version "1.2.1"
+    id("com.gradle.plugin-publish") version "2.0.0"
     id("maven-publish")
-    id("org.jetbrains.dokka")  version "1.9.20" //KDocs
+    id("org.jetbrains.dokka")  version "2.1.0" //KDocs
+    id("org.jetbrains.dokka-javadoc") version "2.1.0"
 }
 
 group = "asia.hombre.neorust"
@@ -26,7 +27,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(8)
+    jvmToolchain(17)
 }
 
 gradlePlugin {
@@ -37,6 +38,7 @@ gradlePlugin {
             version = project.version.toString()
             description = project.description
             displayName = officialName
+            @Suppress("UnstableApiUsage")
             tags.set(listOf("plugin", "gradle", "rust", "cargo"))
         }
     }
@@ -48,7 +50,7 @@ tasks.register<Jar>("sourcesJar") {
 }
 
 tasks.register<Jar>("javadocJar") {
-    from(tasks.dokkaJavadoc)
+    from(tasks.dokkaGeneratePublicationJavadoc)
     archiveClassifier.set("javadoc")
 }
 
@@ -58,27 +60,23 @@ publishing {
     }
 }
 
-tasks.dokkaHtml.configure {
-    dokkaSourceSets {
-        named("main") {
-            perPackageOption {
-                matchingRegex.set(".*")
-                includeNonPublic.set(false)
+dokka {
+    pluginsConfiguration.html {
+        footerMessage = "Copyright (c) 2025 Ron Lauren Hombre"
+    }
+
+    dokkaPublications.html {
+        dokkaSourceSets {
+            named("main") {
+                perPackageOption {
+                    matchingRegex.set(".*")
+                }
+                reportUndocumented.set(true)
+                documentedVisibilities(
+                    VisibilityModifier.Public,
+                    VisibilityModifier.Protected,
+                )
             }
-            reportUndocumented.set(true)
         }
     }
-}
-
-tasks.withType<DokkaTask>().configureEach {
-    val dokkaBaseConfiguration = """
-    {
-      "footerMessage": "(C) 2025 Ron Lauren Hombre"
-    }
-    """
-    pluginsMapConfiguration.set(
-        mapOf(
-            "org.jetbrains.dokka.base.DokkaBase" to dokkaBaseConfiguration
-        )
-    )
 }

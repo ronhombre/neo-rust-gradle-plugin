@@ -15,7 +15,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
-import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.internal.classpath.Instrumented.exec
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import setBenchProperties
@@ -155,9 +154,9 @@ class Rust: Plugin<Project> {
                 val lowercaseBinaryName = bin.name.get().lowercase()
                 val buildProfile = bin.buildProfile.get()
                 val lowercaseProfile = buildProfile.name.lowercase()
-                val taskNameSuffix = if(buildProfile == BuildProfile.DEFAULT) "" else lowercaseProfile.capitalized()
-                val binaryBuildTask = "build" + lowercaseBinaryName.capitalized() + taskNameSuffix
-                val runTask = "run" + lowercaseBinaryName.capitalized() + taskNameSuffix
+                val taskNameSuffix = if(buildProfile == BuildProfile.DEFAULT) "" else lowercaseProfile.uppercaseFirstChar()
+                val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
+                val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
                 val cargoBuildTask = tryRegisterTask {
                     target.tasks.register(binaryBuildTask, CargoBuild::class.java) {
                         dependsOn("generateCargoManifest", "findCargo")
