@@ -1,4 +1,4 @@
-# Neo Rust Gradle Plugin (0.4.0-experimental)
+# Neo Rust Gradle Plugin (0.4.0)
 A Gradle Plugin to build Rust projects using Gradle as the Build Environment instead of natively using Cargo.
 Gradle is a powerful build tool and utilizing it for Rust projects brings massive benefits as it reduces the complexity
 especially when it comes to projects working with multiple programming languages. Such an example is an Android app that
@@ -42,8 +42,8 @@ because of its complexity), and limited support for `lib` section.
 | No Plan | Avoided implementing due to design or logic reasons.  |
 
 ### Current Status
-As of version 0.4.0, Neo Rust Gradle Plugin can build, test, benchmark, and publish(?) simple Rust projects without
-requiring a Cargo.toml file. You can use local Gradle modules as crate dependencies
+As of version 0.4.0, Neo Rust Gradle Plugin can build, test, benchmark, publish(?, and run most Rust projects without
+requiring a Cargo.toml file. Additionally, users can use local Gradle modules as crate dependencies
 
 **Key capabilities:**
 - Full support for basic Cargo commands (build, test, bench, publish).
@@ -73,7 +73,7 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.4.0-experimental"
+    id("asia.hombre.neorust") version "0.4.0"
 }
 
 dependencies {
@@ -158,7 +158,7 @@ tasks.getByName<CargoTest>("test") { //Becomes testRust if conflicting a task na
 }
 ```
 
-**Last Updated:** 0.4.0-experimental
+**Last Updated:** 0.4.0
 
 * Idiomatic crate dependency declaration
 * Gradle Parallel Build Cache compatibility
@@ -175,7 +175,7 @@ it.
 ## Requirements
 * Cargo (and its dependencies)
 * Gradle
-* JDK 8.0+
+* JDK 17.0+
 
 These haven't been concretely determined. Please try it out and tell me if it works or not!
 
