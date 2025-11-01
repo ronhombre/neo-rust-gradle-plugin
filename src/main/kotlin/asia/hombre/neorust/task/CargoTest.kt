@@ -6,9 +6,12 @@ import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Execute benchmarks of a package
+ * Tests this project (if available)
  *
- * This runs `cargo bench`
+ * This runs `cargo test`
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
  */
 abstract class CargoTest @Inject constructor(): CargoBench() {
     @get:Input

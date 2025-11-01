@@ -15,11 +15,18 @@ import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.absolutePathString
 
+/**
+ * Any Cargo task needing the default Cargo configuration
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
+ */
 abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     @Internal
     lateinit var ext: RustExtension
 
     @get:Inject
+    @get:Internal
     abstract val cmd: ExecOperations
 
     /**
@@ -127,7 +134,6 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     /**
      * Internally creates a list of all the available arguments to pass to cargo.
      */
-    @Internal
     internal open fun compileArgs(): List<String> {
         val args = getInitialArgs() as MutableList<String>
 
@@ -211,7 +217,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     fun run() {
         cmd.exec {
-            commandLine = compileArgs().also { println(it) }
+            commandLine = compileArgs()
         }
     }
 

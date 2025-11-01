@@ -1,5 +1,11 @@
 package asia.hombre.neorust.option
 
+/**
+ * Build Profile used to build and run a binary.
+ *
+ * @since 0.4.0
+ * @author Ron Lauren Hombre
+ */
 enum class BuildProfile {
     /**
      * Inherits the build profile from the project when run.

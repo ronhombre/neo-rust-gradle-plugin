@@ -7,9 +7,12 @@ import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Execute benchmarks of a package
+ * Benchmarks this project (if available)
  *
  * This runs `cargo bench`
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
  */
 abstract class CargoBench @Inject constructor(): CargoTargettedTask() {
     @get:Input

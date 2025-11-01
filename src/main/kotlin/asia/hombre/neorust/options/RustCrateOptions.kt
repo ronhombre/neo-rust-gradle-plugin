@@ -6,6 +6,12 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
+/**
+ * Define a Crate dependency for Cargo to use
+ *
+ * @since 0.3.0
+ * @author Ron Lauren Hombre
+ */
 abstract class RustCrateOptions @Inject constructor(internal val name: String, internal val version: String) {
     @get:Input
     @get:Optional

@@ -6,6 +6,12 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
+/**
+ * Global Cargo build target options. This is applied everywhere by default.
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
+ */
 abstract class RustTargetOptions @Inject constructor() {
     @get:Input
     @get:Optional
@@ -13,7 +19,7 @@ abstract class RustTargetOptions @Inject constructor() {
 
     @get:Input
     @get:Optional
-    abstract val bin: ListProperty<RustBinaryOptions.Binary>
+    abstract val bin: ListProperty<String>
 
     @get:Input
     @get:Optional

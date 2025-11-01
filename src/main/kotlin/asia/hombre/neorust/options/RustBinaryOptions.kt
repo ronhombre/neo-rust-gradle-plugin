@@ -10,6 +10,12 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
+/**
+ * Cargo options for binary targets
+ *
+ * @since 0.3.0
+ * @author Ron Lauren Hombre
+ */
 abstract class RustBinaryOptions @Inject constructor() {
     @get:Internal
     @get:Inject

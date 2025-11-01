@@ -35,6 +35,7 @@ gradlePlugin {
         create(project.group.toString()) {
             id = project.group.toString()
             implementationClass = "asia.hombre.neorust.Rust"
+            vcsUrl = "https://github.com/ronhombre/neo-rust-gradle-plugin"
             version = project.version.toString()
             description = project.description
             displayName = officialName

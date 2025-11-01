@@ -1,6 +1,6 @@
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.extension.CrateExtension
+import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
@@ -16,10 +16,16 @@ import writeTable
 import java.io.File
 import javax.inject.Inject
 
+/**
+ * Generate a Cargo-compatible `Cargo.toml` which is used when `cargo` is run.
+ *
+ * @since 0.2.0
+ * @author Ron Lauren Hombre
+ */
 abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
 
     @get:Input
-    abstract val crateExtension: Property<CrateExtension>
+    abstract val crateLibrary: Property<CrateLibrary>
     @get:Input
     abstract val rustManifestOptions: Property<RustManifestOptions>
     @get:Input
@@ -37,9 +43,9 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
         if(cargoToml.exists()) cargoToml.delete()
 
         val manifestOptions = rustManifestOptions.get()
-        val dependencies = crateExtension.get().dependencies
-        val devDependencies = crateExtension.get().devDependencies
-        val buildDependencies = crateExtension.get().buildDependencies
+        val dependencies = crateLibrary.get().dependencies
+        val devDependencies = crateLibrary.get().devDependencies
+        val buildDependencies = crateLibrary.get().buildDependencies
 
         val content = StringBuilder()
         val packageOptions = manifestOptions.packageConfig

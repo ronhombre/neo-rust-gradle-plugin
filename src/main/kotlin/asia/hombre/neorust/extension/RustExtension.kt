@@ -4,7 +4,6 @@ import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.RustBenchOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
-import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustPublishOptions
@@ -21,6 +20,12 @@ import org.gradle.api.tasks.Optional
 import java.nio.file.Path
 import javax.inject.Inject
 
+/**
+ * Rust Extension
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
+ */
 @Suppress("unused")
 abstract class RustExtension @Inject constructor(project: Project) {
     private val objects: ObjectFactory = project.objects
@@ -163,10 +168,6 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @Internal
     internal val rustBinaryOptions: RustBinaryOptions = objects.newInstance(
         RustBinaryOptions::class.java
-    )
-    @Internal
-    internal val rustBuildTargetOptions: RustBuildTargetOptions = objects.newInstance(
-        RustBuildTargetOptions::class.java
     )
     @Internal
     internal val rustFeaturesOptions: RustFeaturesOptions = objects.newInstance(

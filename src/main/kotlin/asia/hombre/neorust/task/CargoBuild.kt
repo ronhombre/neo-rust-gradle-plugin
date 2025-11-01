@@ -10,9 +10,12 @@ import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Compile the current package
+ * Builds all or a specific binary
  *
  * This runs `cargo build`
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
  */
 abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     @get:Input

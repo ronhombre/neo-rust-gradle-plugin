@@ -1,6 +1,6 @@
 package asia.hombre.neorust
 
-import asia.hombre.neorust.extension.CrateExtension
+import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.BuildProfile
 import asia.hombre.neorust.task.CargoBench
@@ -22,14 +22,15 @@ import setBuildProperties
 import setDefaultProperties
 import setPublishProperties
 import setTargettedProperties
+import setTestProperties
 import java.io.IOException
 
 @Suppress("unused")
 class Rust: Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions.create("rust", RustExtension::class.java)
-        val crateExtension = CrateExtension(target.name, target.objects)
-        target.dependencies.extensions.add("rustDependencies", crateExtension)
+        val crateLibrary = CrateLibrary(target.name, target.objects)
+        target.dependencies.extensions.add("rustDependencies", crateLibrary)
 
         //Detect test environment
         if(IS_TEST_ENVIRONMENT)
@@ -69,7 +70,7 @@ class Rust: Plugin<Project> {
                 rustManifestOptions.set(extension.rustManifestOptions)
                 rustBinaryOptions.set(extension.rustBinaryOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
-                this.crateExtension.set(crateExtension)
+                this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
             }.get()
         }
@@ -116,7 +117,9 @@ class Rust: Plugin<Project> {
                 setDefaultProperties()
                 setTargettedProperties()
                 setBuildProperties()
-                this.bin.set(extension.rustBinaryOptions.list)
+                this.bin.addAll(target.provider<Iterable<String>> {
+                    extension.rustBinaryOptions.list.map { it.name.get() }.toSet().asIterable()
+                })
             }.get()
         }
 
@@ -142,6 +145,7 @@ class Rust: Plugin<Project> {
                 setDefaultProperties()
                 setTargettedProperties()
                 setBenchProperties()
+                setTestProperties()
             }.get()
         }
 
@@ -150,9 +154,9 @@ class Rust: Plugin<Project> {
             extension.rustManifestOptions.packageConfig.version.convention(project.version.toString())
             extension.rustManifestOptions.packageConfig.description.convention(project.description)
 
-            extension.rustBinaryOptions.list.forEach { bin ->
-                val lowercaseBinaryName = bin.name.get().lowercase()
-                val buildProfile = bin.buildProfile.get()
+            extension.rustBinaryOptions.list.forEach { binary ->
+                val lowercaseBinaryName = binary.name.get().lowercase()
+                val buildProfile = binary.buildProfile.get()
                 val lowercaseProfile = buildProfile.name.lowercase()
                 val taskNameSuffix = if(buildProfile == BuildProfile.DEFAULT) "" else lowercaseProfile.uppercaseFirstChar()
                 val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
@@ -173,7 +177,8 @@ class Rust: Plugin<Project> {
                             BuildProfile.DEV -> this.release.set(false)
                             BuildProfile.RELEASE -> this.release.set(true)
                         }
-                        this.bin.add(bin)
+                        this.bin.set(mutableListOf()) //Get off the Global property
+                        this.bin.add(binary.name.get())
                     }.get()
                 } as CargoBuild
                 tryRegisterTask {
@@ -191,8 +196,8 @@ class Rust: Plugin<Project> {
                             else
                                 "debug"
                         )
-                        this.arguments.set(bin.arguments.get())
-                        this.environment.set(bin.environment.get())
+                        this.arguments.set(binary.arguments.get())
+                        this.environment.set(binary.environment.get())
                     }.get()
                 }
             }

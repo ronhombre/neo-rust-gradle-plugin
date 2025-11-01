@@ -1,8 +1,6 @@
 
-import asia.hombre.neorust.build.BuildTarget
 import asia.hombre.neorust.exception.DuplicateBinaryTargetException
-import asia.hombre.neorust.exception.DuplicateBuildTargetException
-import asia.hombre.neorust.extension.CrateExtension
+import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.internal.CargoTargettedTask
@@ -10,13 +8,13 @@ import asia.hombre.neorust.options.RustBenchOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBinaryOptions.Binary
 import asia.hombre.neorust.options.RustBuildOptions
-import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustManifestOptions.Library
 import asia.hombre.neorust.options.RustManifestOptions.Package
 import asia.hombre.neorust.options.RustPublishOptions
+import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
@@ -56,13 +54,13 @@ internal fun CargoDefaultTask.setDefaultProperties() {
 
 internal fun CargoTargettedTask.setTargettedProperties() {
     lib.convention(ext.rustTargetOptions.lib)
-    bin.convention(ext.rustTargetOptions.bin)
+    bin.set(ext.rustTargetOptions.bin)
     bins.convention(ext.rustTargetOptions.bins)
-    example.convention(ext.rustTargetOptions.example)
+    example.set(ext.rustTargetOptions.example)
     examples.convention(ext.rustTargetOptions.examples)
-    test.convention(ext.rustTargetOptions.test)
+    test.set(ext.rustTargetOptions.test)
     tests.convention(ext.rustTargetOptions.tests)
-    bench.convention(ext.rustTargetOptions.bench)
+    bench.set(ext.rustTargetOptions.bench)
     benches.convention(ext.rustTargetOptions.benches)
     allTargets.convention(ext.rustTargetOptions.allTargets)
 }
@@ -94,61 +92,93 @@ internal fun CargoPublish.setPublishProperties() {
     registry.convention(ext.rustPublishOptions.registry)
 }
 
-@Suppress("unused")
 internal fun CargoTest.setTestProperties() {
     testThreads.convention((ext.rustTargetOptions as RustTestOptions).testThreads)
 }
 
+/**
+ * Modify the Cargo crate manifest
+ */
 @Suppress("unused")
 fun RustExtension.manifest(rustManifestOptions: Action<RustManifestOptions>) {
     rustManifestOptions.execute(this.rustManifestOptions)
 }
 
+/**
+ * Modify the Global build options
+ */
 @Suppress("unused")
 fun RustExtension.building(rustBuildOptions: Action<RustBuildOptions>) {
     rustBuildOptions.execute(this.rustBuildOptions)
 }
 
+/**
+ * Modify the Global benchmark options
+ */
 @Suppress("unused")
 fun RustExtension.benchmarking(rustBenchOptions: Action<RustBenchOptions>) {
     rustBenchOptions.execute(this.rustBenchOptions)
 }
 
+/**
+ * Modify the Global publish options
+ */
 @Suppress("unused")
 fun RustExtension.publishing(rustPublishOptions: Action<RustPublishOptions>) {
     rustPublishOptions.execute(this.rustPublishOptions)
 }
 
+/**
+ * Modify the Global test options
+ */
 @Suppress("unused")
 fun RustExtension.testing(rustTestOptions: Action<RustTestOptions>) {
     rustTestOptions.execute(this.rustTestOptions)
 }
 
+/**
+ * Register binaries
+ */
 @Suppress("unused")
 fun RustExtension.binaries(rustBinaryOptions: Action<RustBinaryOptions>) {
     rustBinaryOptions.execute(this.rustBinaryOptions)
 }
 
+/**
+ * Set Cargo features
+ */
 @Suppress("unused")
 fun RustExtension.features(rustFeaturesOptions: Action<RustFeaturesOptions>) {
     rustFeaturesOptions.execute(this.rustFeaturesOptions)
 }
 
+/**
+ * Define Global build targets that apply to all build, bench, and test tasks
+ */
 @Suppress("unused")
-fun RustExtension.buildTargets(rustBuildTargetOptions: Action<RustBuildTargetOptions>) {
-    rustBuildTargetOptions.execute(this.rustBuildTargetOptions)
+fun RustExtension.targets(rustTargetOptions: Action<RustTargetOptions>) {
+    rustTargetOptions.execute(this.rustTargetOptions)
 }
 
+/**
+ * Crate package configuration (Crate name, version, author, etc)
+ */
 @Suppress("unused")
 fun RustManifestOptions.packaging(packageConfig: Action<Package>) {
     packageConfig.execute(this.packageConfig)
 }
 
+/**
+ * Configure this project as a library Crate
+ */
 @Suppress("unused")
 fun RustManifestOptions.lib(libConfig: Action<Library>) {
     libConfig.execute(this.libConfig)
 }
 
+/**
+ * Register a binary target to be built and configure it for custom builds
+ */
 @Suppress("unused")
 fun RustBinaryOptions.register(name: String, binary: Action<Binary>? = null) {
     val bin = objectFactory.newInstance(Binary::class.java)
@@ -168,22 +198,12 @@ fun RustBinaryOptions.register(name: String, binary: Action<Binary>? = null) {
     }
 }
 
+/**
+ * Set a feature for Cargo
+ */
 @Suppress("unused")
 fun RustFeaturesOptions.feature(name: String, values: List<String> = emptyList()) {
     this.list.add(RustFeaturesOptions.Feature(name, values))
-}
-
-@Suppress("unused")
-fun RustBuildTargetOptions.register(target: String, build: Action<BuildTarget>? = null) {
-    val buildTarget = BuildTarget(target)
-
-    build?.execute(buildTarget)
-
-    this.builds.get().find { it.target == buildTarget.target }?.let {
-        throw DuplicateBuildTargetException("This target has already been registered!")
-    }
-
-    this.builds.add(buildTarget)
 }
 
 private val OS = System.getProperty("os.name").lowercase(Locale.getDefault())
@@ -276,7 +296,7 @@ private fun Action<RustCrateOptions>?.get(objectFactory: ObjectFactory, nameVers
     return options
 }
 
-private fun CrateExtension.configureAndGetGradleCrate(
+private fun CrateLibrary.configureAndGetGradleCrate(
     dependency: ProjectDependency,
     targetList: MutableList<RustCrateOptions>,
     options: Action<RustCrateOptions>?
@@ -327,46 +347,64 @@ private fun CrateExtension.configureAndGetGradleCrate(
 
 //Non-local crates
 
+/**
+ * Add a non-local crate taken from the default registry unless configured
+ */
 @Suppress("unused")
 fun DependencyHandler.crate(nameVersion: String, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateExtension::class.java).apply {
+    this.extensions.getByType(CrateLibrary::class.java).apply {
         dependencies.add(options.get(this.objects, nameVersion))
     }
 }
 
+/**
+ * Add a non-local dev only crate taken from the default registry unless configured
+ */
 @Suppress("unused")
 fun DependencyHandler.devCrate(nameVersion: String, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateExtension::class.java).apply {
+    this.extensions.getByType(CrateLibrary::class.java).apply {
         devDependencies.add(options.get(this.objects, nameVersion))
     }
 }
 
+/**
+ * Add a non-local build only crate taken from the default registry unless configured
+ */
 @Suppress("unused")
 fun DependencyHandler.buildCrate(nameVersion: String, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateExtension::class.java).apply {
+    this.extensions.getByType(CrateLibrary::class.java).apply {
         buildDependencies.add(options.get(this.objects, nameVersion))
     }
 }
 
 //Local crates
 
+/**
+ * Add a local crate taken from a local Gradle module
+ */
 @Suppress("unused")
 fun DependencyHandler.crate(project: ProjectDependency, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateExtension::class.java).apply {
+    this.extensions.getByType(CrateLibrary::class.java).apply {
         configureAndGetGradleCrate(project, dependencies, options)
     }
 }
 
+/**
+ * Add a local dev only crate taken from a local Gradle module
+ */
 @Suppress("unused")
 fun DependencyHandler.devCrate(project: ProjectDependency, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateExtension::class.java).apply {
+    this.extensions.getByType(CrateLibrary::class.java).apply {
         configureAndGetGradleCrate(project, devDependencies, options)
     }
 }
 
+/**
+ * Add a local build only crate taken from a local Gradle module
+ */
 @Suppress("unused")
 fun DependencyHandler.buildCrate(project: ProjectDependency, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateExtension::class.java).apply {
+    this.extensions.getByType(CrateLibrary::class.java).apply {
         configureAndGetGradleCrate(project, buildDependencies, options)
     }
 }

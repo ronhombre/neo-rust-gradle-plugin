@@ -7,9 +7,12 @@ import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Execute benchmarks of a package
+ * Publish a Cargo crate to a registry
  *
- * This runs `cargo bench`
+ * This runs `cargo publish`
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
  */
 abstract class CargoPublish @Inject constructor(): CargoDefaultTask() {
     @get:Input

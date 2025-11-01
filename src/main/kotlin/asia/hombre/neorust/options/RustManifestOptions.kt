@@ -8,6 +8,12 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
+/**
+ * Configure Cargo crate manifest options (Cargo.toml)
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
+ */
 open class RustManifestOptions @Inject constructor(objectFactory: ObjectFactory) {
     @Internal
     internal val packageConfig = objectFactory.newInstance(Package::class.java)

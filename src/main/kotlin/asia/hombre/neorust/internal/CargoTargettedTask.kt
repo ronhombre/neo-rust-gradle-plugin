@@ -1,12 +1,17 @@
 package asia.hombre.neorust.internal
 
-import asia.hombre.neorust.options.RustBinaryOptions
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
+/**
+ * A Cargo task with a binary target
+ *
+ * @since 0.1.0
+ * @author Ron Lauren Hombre
+ */
 abstract class CargoTargettedTask @Inject constructor(): CargoDefaultTask() {
     @get:Input
     @get:Optional
@@ -14,7 +19,7 @@ abstract class CargoTargettedTask @Inject constructor(): CargoDefaultTask() {
 
     @get:Input
     @get:Optional
-    abstract val bin: ListProperty<RustBinaryOptions.Binary>
+    abstract val bin: ListProperty<String>
 
     @get:Input
     @get:Optional
@@ -57,7 +62,7 @@ abstract class CargoTargettedTask @Inject constructor(): CargoDefaultTask() {
         bin.apply {
             if(isPresent && get().isNotEmpty()) {
                 args.add("--bin")
-                args.addAll(get().map { it.name.get() })
+                args.addAll(get())
             }
         }
 

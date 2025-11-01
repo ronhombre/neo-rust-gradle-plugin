@@ -14,6 +14,12 @@ import org.gradle.process.ExecOperations
 import javax.inject.Inject
 import kotlin.io.path.Path
 
+/**
+ * Runs a binary executable built by Cargo
+ *
+ * @since 0.4.0
+ * @author Ron Lauren Hombre
+ */
 abstract class RunBinary @Inject constructor(): DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations
