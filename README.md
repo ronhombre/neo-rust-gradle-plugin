@@ -9,6 +9,11 @@ developers.
 
 (Note: This is not a fork of rust-gradle-plugin. This was made and designed from scratch.)
 
+> [!NOTE]
+> Due to the complexity of Cargo, this plugin should be considered 'beta' until version 1.0.0. There are still many
+> features missing and hasn't been thoroughly tested yet. In the future, I'd like to port large OSS Rust projects into
+> Gradle using my plugin as a final compatibility test.
+
 ## Project Versioning
 This project follows the [Semantic Versioning 2.0](https://semver.org/) when updating the version number. As it stands,
 the project is still under development and the API might change between MINOR versions(that is the **y** in x.y.z).
@@ -107,6 +112,17 @@ rust {
         lib {
             crateType.add("cdylib")
         }
+        binaries {
+            register("rusty") //Uses the default setting which is RELEASE
+            register("rusty") { //Uses the DEV setting and makes a buildRustyDev and a runRustyDev task
+                buildProfile = BuildProfile.DEV
+            }
+        }
+    }
+    
+    features {
+        feature("your-feature")
+        feature("your-feature-2", listOf("value1", "value2"))
     }
 
     benchmarking {
