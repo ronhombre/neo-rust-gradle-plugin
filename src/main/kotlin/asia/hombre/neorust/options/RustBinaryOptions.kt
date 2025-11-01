@@ -27,6 +27,10 @@ abstract class RustBinaryOptions @Inject constructor() {
         abstract val doc: Property<Boolean>
 
         @get:Input
+        @get:Optional
+        abstract val requiredFeatures: ListProperty<String>
+
+        @get:Input
         abstract val buildProfile: Property<BuildProfile>
 
         @get:Input

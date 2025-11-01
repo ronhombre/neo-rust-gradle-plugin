@@ -3,6 +3,7 @@ package asia.hombre.neorust.task
 import asia.hombre.neorust.extension.CrateExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.options.RustBinaryOptions
+import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
@@ -21,6 +22,8 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
     abstract val crateExtension: Property<CrateExtension>
     @get:Input
     abstract val rustManifestOptions: Property<RustManifestOptions>
+    @get:Input
+    abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
     @get:Input
     abstract val rustBinaryOptions: Property<RustBinaryOptions>
     @get:Input
@@ -109,6 +112,18 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
                 writeBooleanField("autobenches", packageOptions.autoBenches.get())
         }
 
+        rustFeaturesOptions.get().list.addAll(featuresList.get().map { feature ->
+            RustFeaturesOptions.Feature(feature.key, feature.value)
+        })
+
+        if(rustFeaturesOptions.get().list.isNotEmpty()) {
+            content.writeTable("features") {
+                rustFeaturesOptions.get().list.forEach { feature ->
+                    writeArrayField(feature.name, feature.values, true)
+                }
+            }
+        }
+
         if(dependencies.isNotEmpty()) {
             content.writeTable("dependencies") {
                 dependencies.forEach { rustCrate ->
@@ -161,13 +176,13 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
             writeArrayField("crate-type", libOptions.crateType)
         }*/
 
-        if(featuresList.get().isNotEmpty()) {
+        /*if(featuresList.get().isNotEmpty()) {
             content.writeTable("features") {
                 featuresList.get().forEach { (key, values) ->
                     writeArrayField(key, values, true)
                 }
             }
-        }
+        }*/
 
         cargoToml.writeText(content.removePrefix("\n").toString())
     }

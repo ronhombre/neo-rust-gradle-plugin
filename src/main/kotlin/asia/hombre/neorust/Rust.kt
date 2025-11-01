@@ -3,7 +3,13 @@ package asia.hombre.neorust
 import asia.hombre.neorust.extension.CrateExtension
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.BuildProfile
-import asia.hombre.neorust.task.*
+import asia.hombre.neorust.task.CargoBench
+import asia.hombre.neorust.task.CargoBuild
+import asia.hombre.neorust.task.CargoClean
+import asia.hombre.neorust.task.CargoManifestGenerate
+import asia.hombre.neorust.task.CargoPublish
+import asia.hombre.neorust.task.CargoTest
+import asia.hombre.neorust.task.RunBinary
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -63,6 +69,7 @@ class Rust: Plugin<Project> {
 
                 rustManifestOptions.set(extension.rustManifestOptions)
                 rustBinaryOptions.set(extension.rustBinaryOptions)
+                rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 this.crateExtension.set(crateExtension)
                 featuresList.set(extension.featuresList)
             }.get()

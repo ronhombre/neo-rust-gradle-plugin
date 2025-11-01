@@ -12,6 +12,7 @@ import asia.hombre.neorust.options.RustBinaryOptions.Binary
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustCrateOptions
+import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustManifestOptions.Library
 import asia.hombre.neorust.options.RustManifestOptions.Package
@@ -27,7 +28,7 @@ import org.gradle.api.UnknownDomainObjectException
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.model.ObjectFactory
-import java.util.Locale
+import java.util.*
 import kotlin.io.path.Path
 
 internal fun CargoDefaultTask.setDefaultProperties() {
@@ -129,6 +130,11 @@ fun RustExtension.binaries(rustBinaryOptions: Action<RustBinaryOptions>) {
 }
 
 @Suppress("unused")
+fun RustExtension.features(rustFeaturesOptions: Action<RustFeaturesOptions>) {
+    rustFeaturesOptions.execute(this.rustFeaturesOptions)
+}
+
+@Suppress("unused")
 fun RustExtension.buildTargets(rustBuildTargetOptions: Action<RustBuildTargetOptions>) {
     rustBuildTargetOptions.execute(this.rustBuildTargetOptions)
 }
@@ -160,6 +166,11 @@ fun RustBinaryOptions.register(name: String, binary: Action<Binary>? = null) {
         }
         this.list.add(bin)
     }
+}
+
+@Suppress("unused")
+fun RustFeaturesOptions.feature(name: String, values: List<String> = emptyList()) {
+    this.list.add(RustFeaturesOptions.Feature(name, values))
 }
 
 @Suppress("unused")
