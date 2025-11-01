@@ -2,12 +2,14 @@ package asia.hombre.neorust
 
 import asia.hombre.neorust.extension.CrateExtension
 import asia.hombre.neorust.extension.RustExtension
+import asia.hombre.neorust.option.BuildProfile
 import asia.hombre.neorust.task.*
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.tasks.Exec
+import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.internal.classpath.Instrumented.exec
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import setBenchProperties
@@ -27,43 +29,6 @@ class Rust: Plugin<Project> {
         //Detect test environment
         if(IS_TEST_ENVIRONMENT)
             println("Warning: Test environment detected!\nConfigs and Tasks are now explicitly named.")
-
-        //Configurations
-        /*val implementationName =
-            modifyIfConflictingConfig(target, "implementation") + addIfTest()
-        tryCreateConfig {
-            target.configurations.create(implementationName) {
-                isVisible = false
-                isTransitive = true
-                description = "Rust dependencies"
-            }
-        }
-
-        extension.implementationName = implementationName
-
-        val devOnlyName =
-            modifyIfConflictingConfig(target, "devOnly") + addIfTest()
-        tryCreateConfig {
-            target.configurations.create(devOnlyName) {
-                isVisible = false
-                isTransitive = true
-                description = "Rust Developer dependencies"
-            }
-        }
-
-        extension.devOnlyName = devOnlyName
-
-        val buildOnlyName =
-            modifyIfConflictingConfig(target, "buildOnly") + addIfTest()
-        tryCreateConfig {
-            target.configurations.create(buildOnlyName) {
-                isVisible = false
-                isTransitive = true
-                description = "Rust Build dependencies"
-            }
-        }
-
-        extension.buildOnlyName = buildOnlyName*/
 
         //Tasks
         tryRegisterTask {
@@ -87,18 +52,8 @@ class Rust: Plugin<Project> {
                         throw RuntimeException(error)
                     }
                 }
-            }
+            }.get()
         }
-        /*tryRegisterTask {
-            target.tasks.register("resolveRustDependencies", CargoResolver::class.java) {
-                dependsOn("findCargo")
-
-                group = "build"
-
-                this.rustExtension.set(extension)
-                this.crateExtension.set(crateExtension)
-            }
-        }*/
 
         tryRegisterTask {
             target.tasks.register("generateCargoManifest", CargoManifestGenerate::class.java) {
@@ -106,15 +61,11 @@ class Rust: Plugin<Project> {
                 this.ext = extension
                 setDefaultProperties()
 
-                extension.rustManifestOptions.packageConfig.name.convention(project.name)
-                extension.rustManifestOptions.packageConfig.version.convention(project.version.toString())
-                extension.rustManifestOptions.packageConfig.description.convention(project.description)
-
                 rustManifestOptions.set(extension.rustManifestOptions)
                 rustBinaryOptions.set(extension.rustBinaryOptions)
                 this.crateExtension.set(crateExtension)
                 featuresList.set(extension.featuresList)
-            }
+            }.get()
         }
         /*tryRegisterTask {
             target.tasks.register("generateCargoConfig", CargoConfigGenerate::class.java) {
@@ -132,7 +83,7 @@ class Rust: Plugin<Project> {
                 this.ext = extension
                 setDefaultProperties()
                 setTargettedProperties()
-            }
+            }.get()
         }
 
         var benchTask = "bench" + addIfTest()
@@ -145,7 +96,7 @@ class Rust: Plugin<Project> {
                 setDefaultProperties()
                 setTargettedProperties()
                 setBenchProperties()
-            }
+            }.get()
         }
 
         var buildTask = "build" + addIfTest()
@@ -154,24 +105,13 @@ class Rust: Plugin<Project> {
             target.tasks.register(buildTask, CargoBuild::class.java) {
                 dependsOn("generateCargoManifest", "findCargo")
                 group = "build"
+                description = "Builds all the binaries using the default profile"
                 this.ext = extension
                 setDefaultProperties()
                 setTargettedProperties()
                 setBuildProperties()
                 this.bin.set(extension.rustBinaryOptions.list)
-            }
-        }
-
-        var runTask = "runBinary" + addIfTest()
-        runTask += addIfConflictingTask(target, runTask)
-        //TODO: Auto-generate for all available binary
-        tryRegisterTask {
-            target.tasks.register(runTask, Exec::class.java) {
-                dependsOn(buildTask)
-                group = "run"
-
-                //TODO: Run built executable
-            }
+            }.get()
         }
 
         var publishTask = "publish" + addIfTest()
@@ -183,7 +123,7 @@ class Rust: Plugin<Project> {
                 this.ext = extension
                 setDefaultProperties()
                 setPublishProperties()
-            }
+            }.get()
         }
 
         var testTask = "test" + addIfTest()
@@ -196,7 +136,59 @@ class Rust: Plugin<Project> {
                 setDefaultProperties()
                 setTargettedProperties()
                 setBenchProperties()
+            }.get()
+        }
 
+        target.afterEvaluate {
+            extension.rustManifestOptions.packageConfig.name.convention(project.name)
+            extension.rustManifestOptions.packageConfig.version.convention(project.version.toString())
+            extension.rustManifestOptions.packageConfig.description.convention(project.description)
+
+            extension.rustBinaryOptions.list.forEach { bin ->
+                val lowercaseBinaryName = bin.name.get().lowercase()
+                val buildProfile = bin.buildProfile.get()
+                val lowercaseProfile = buildProfile.name.lowercase()
+                val taskNameSuffix = if(buildProfile == BuildProfile.DEFAULT) "" else lowercaseProfile.capitalized()
+                val binaryBuildTask = "build" + lowercaseBinaryName.capitalized() + taskNameSuffix
+                val runTask = "run" + lowercaseBinaryName.capitalized() + taskNameSuffix
+                val cargoBuildTask = tryRegisterTask {
+                    target.tasks.register(binaryBuildTask, CargoBuild::class.java) {
+                        dependsOn("generateCargoManifest", "findCargo")
+                        group = "build"
+                        description = "Build '$lowercaseBinaryName' using the global build profile"
+
+                        this.ext = extension
+                        setDefaultProperties()
+                        setTargettedProperties()
+                        setBuildProperties()
+
+                        when(buildProfile) {
+                            BuildProfile.DEFAULT -> logger.debug("Using the default profile for $binaryBuildTask")
+                            BuildProfile.DEV -> this.release.set(false)
+                            BuildProfile.RELEASE -> this.release.set(true)
+                        }
+                        this.bin.add(bin)
+                    }.get()
+                } as CargoBuild
+                tryRegisterTask {
+                    target.tasks.register(runTask, RunBinary::class.java) {
+                        dependsOn(binaryBuildTask)
+                        group = "run"
+                        description = "Execute binary '$lowercaseBinaryName' using the profile '$lowercaseProfile'"
+
+                        this.targetDirectory.set(extension.targetDirectory)
+                        this.manifestDirectory.set(extension.manifestPath)
+                        this.binaryName.set(lowercaseBinaryName)
+                        this.buildProfile.set(
+                            if(cargoBuildTask.release.isPresent && cargoBuildTask.release.get())
+                                "release"
+                            else
+                                "debug"
+                        )
+                        this.arguments.set(bin.arguments.get())
+                        this.environment.set(bin.environment.get())
+                    }.get()
+                }
             }
         }
     }
@@ -226,9 +218,9 @@ class Rust: Plugin<Project> {
         }
     }
 
-    private fun tryRegisterTask(block: () -> Unit) {
+    private fun tryRegisterTask(block: () -> Task): Task {
         try {
-            block.invoke()
+            return block.invoke()
         } catch(e: InvalidUserDataException) {
             throw IllegalStateException(
                 "Plugin did not expect a conflicting task name! Is there another Rust Gradle Plugin?"

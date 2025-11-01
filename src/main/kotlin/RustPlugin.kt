@@ -23,7 +23,6 @@ import asia.hombre.neorust.task.CargoManifestGenerate
 import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 import org.gradle.api.Action
-import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
@@ -152,8 +151,12 @@ fun RustBinaryOptions.register(name: String, binary: Action<Binary>? = null) {
     binary?.execute(bin)
 
     if(bin.name.isPresent) {
-        this.list.find { it.name == bin.name }?.let {
-            throw DuplicateBinaryTargetException("The binary target with name '$name' has already been registered.")
+        this.list.find {
+            it.name.get() == bin.name.get() && it.buildProfile.get() == bin.buildProfile.get()
+        }?.let {
+            throw DuplicateBinaryTargetException(
+                "The binary target with name '$name' and profile '${bin.buildProfile.get()}' has already been registered."
+            )
         }
         this.list.add(bin)
     }
@@ -267,7 +270,7 @@ private fun CrateExtension.configureAndGetGradleCrate(
     targetList: MutableList<RustCrateOptions>,
     options: Action<RustCrateOptions>?
 ) {
-    //Shorten for readability and convenience
+    //Shortened for readability and convenience
     val project = dependency.dependencyProject
     project.afterEvaluate {
         val parentProject = project.rootProject.findProject(this@configureAndGetGradleCrate.projectName)?: run {

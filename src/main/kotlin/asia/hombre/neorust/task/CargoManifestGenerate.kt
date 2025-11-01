@@ -140,13 +140,19 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
             writeArrayField("crate-type", libOptions.crateType.get())
         }
 
+        val previousBinaries = mutableListOf<String>()
+
         rustBinaryOptions.get().list.forEach { binary ->
+            if(previousBinaries.contains(binary.name.get())) return@forEach
             content.writeTable("[bin]") {
                 writeField("name", binary.name.get())
                 if(binary.doc.isPresent)
                     writeBooleanField("doc", binary.doc.get())
+                if(binary.requiredFeatures.isPresent && binary.requiredFeatures.get().isNotEmpty())
+                    writeArrayField("required-features", binary.requiredFeatures.get())
                 writeField("path", "../src/main/rust/main.rs")
             }
+            previousBinaries.add(binary.name.get())
         }
 
         //TODO: Resolve custom registries
