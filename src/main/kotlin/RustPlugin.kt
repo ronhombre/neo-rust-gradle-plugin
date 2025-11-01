@@ -1,6 +1,6 @@
 
-import asia.hombre.neorust.exception.DuplicateBinaryTargetException
 import asia.hombre.neorust.CrateLibrary
+import asia.hombre.neorust.exception.DuplicateBinaryTargetException
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.internal.CargoTargettedTask
@@ -93,7 +93,7 @@ internal fun CargoPublish.setPublishProperties() {
 }
 
 internal fun CargoTest.setTestProperties() {
-    testThreads.convention((ext.rustTargetOptions as RustTestOptions).testThreads)
+    testThreads.convention(ext.rustTestOptions.testThreads)
 }
 
 /**
