@@ -177,6 +177,38 @@ class Rust: Plugin<Project> {
                 }
             }
 
+            if(extension.rustManifestOptions.libConfig.crateType.isPresent) {
+                var buildLibraryTask = "buildLibraryOnly" + addIfTest()
+                buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
+                tryRegisterTask {
+                    target.tasks.register(buildLibraryTask, CargoBuild::class.java) {
+                        dependsOn("generateCargoManifest")
+                        group = "build"
+                        description = "Builds the library only"
+                        this.ext = extension
+                        setDefaultProperties()
+                        setTargettedProperties()
+                        setBuildProperties()
+                        this.lib.set(true)
+                    }.get()
+                }
+                var buildLibraryReleaseTask = "buildLibraryOnlyRelease" + addIfTest()
+                buildLibraryReleaseTask += addIfConflictingTask(target, buildLibraryReleaseTask)
+                tryRegisterTask {
+                    target.tasks.register(buildLibraryReleaseTask, CargoBuild::class.java) {
+                        dependsOn("generateCargoManifest")
+                        group = "build"
+                        description = "Builds the library only as release"
+                        this.ext = extension
+                        setDefaultProperties()
+                        setTargettedProperties()
+                        setBuildProperties()
+                        this.lib.set(true)
+                        this.release.set(true)
+                    }.get()
+                }
+            }
+
             try {
                 val execResult = Instrumented.exec(Runtime.getRuntime(), "cargo version", "")
 
