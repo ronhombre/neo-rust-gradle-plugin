@@ -2,6 +2,7 @@ package asia.hombre.neorust.internal
 
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.CargoColor
+import asia.hombre.neorust.task.CargoClean
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -152,15 +153,15 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
                 args.addAll(listOf("--target-dir", get()))
         }
 
-        if(allFeatures.getOrElse(false))
+        if(allFeatures.getOrElse(false) && this !is CargoClean)
             args.add("--all-features")
 
         features.apply {
-            if(isPresent && allFeatures.getOrElse(false))
+            if(isPresent && !allFeatures.getOrElse(false) && this !is CargoClean)
                 args.addAll(listOf("--features", get()))
         }
 
-        if(noDefaultFeatures.getOrElse(false))
+        if(noDefaultFeatures.getOrElse(false) && this !is CargoClean)
             args.add("--no-default-features")
 
         manifestPath.apply {
