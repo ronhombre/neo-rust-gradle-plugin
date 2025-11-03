@@ -78,7 +78,7 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.4.0"
+    id("asia.hombre.neorust") version "0.4.1"
 }
 
 dependencies {
