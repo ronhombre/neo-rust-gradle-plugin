@@ -6,6 +6,7 @@ import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
+import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
@@ -172,5 +173,9 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @Internal
     internal val rustFeaturesOptions: RustFeaturesOptions = objects.newInstance(
         RustFeaturesOptions::class.java
+    )
+    @Internal
+    internal val rustProfileOptions: RustProfileOptions = objects.newInstance(
+        RustProfileOptions::class.java
     )
 }

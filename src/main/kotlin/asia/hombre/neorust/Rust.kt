@@ -1,6 +1,5 @@
 package asia.hombre.neorust
 
-import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.BuildProfile
 import asia.hombre.neorust.task.CargoBench
@@ -15,7 +14,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
-import org.gradle.internal.classpath.Instrumented.exec
+import org.gradle.internal.classpath.Instrumented
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import setBenchProperties
 import setBuildProperties
@@ -38,36 +37,13 @@ class Rust: Plugin<Project> {
 
         //Tasks
         tryRegisterTask {
-            target.tasks.register("findCargo") {
-                group = "build setup"
-
-                doLast {
-                    try {
-                        val execResult = exec(Runtime.getRuntime(), "cargo version", "")
-
-                        execResult.waitFor()
-
-                        if (execResult.exitValue() != 0) {
-                            val error = "Command failed with exit value: ${execResult.exitValue()}"
-                            logger.error(error)
-                            throw RuntimeException(error)
-                        }
-                    } catch (_: IOException) {
-                        val error = "Cannot find cargo. Install it or set the path environment variable for your system"
-                        logger.error(error)
-                        throw RuntimeException(error)
-                    }
-                }
-            }.get()
-        }
-
-        tryRegisterTask {
             target.tasks.register("generateCargoManifest", CargoManifestGenerate::class.java) {
                 group = "build"
                 this.ext = extension
                 setDefaultProperties()
 
                 rustManifestOptions.set(extension.rustManifestOptions)
+                rustProfileOptions.set(extension.rustProfileOptions)
                 rustBinaryOptions.set(extension.rustBinaryOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 this.crateLibrary.set(crateLibrary)
@@ -85,7 +61,6 @@ class Rust: Plugin<Project> {
         cleanTask += addIfConflictingTask(target, cleanTask)
         tryRegisterTask {
             target.tasks.register(cleanTask, CargoClean::class.java) {
-                dependsOn("findCargo")
                 group = "build"
                 this.ext = extension
                 setDefaultProperties()
@@ -97,7 +72,7 @@ class Rust: Plugin<Project> {
         benchTask += addIfConflictingTask(target, benchTask)
         tryRegisterTask {
             target.tasks.register(benchTask, CargoBench::class.java) {
-                dependsOn("generateCargoManifest", "findCargo")
+                dependsOn("generateCargoManifest")
                 group = "build"
                 this.ext = extension
                 setDefaultProperties()
@@ -110,7 +85,7 @@ class Rust: Plugin<Project> {
         buildTask += addIfConflictingTask(target, buildTask)
         tryRegisterTask {
             target.tasks.register(buildTask, CargoBuild::class.java) {
-                dependsOn("generateCargoManifest", "findCargo")
+                dependsOn("generateCargoManifest")
                 group = "build"
                 description = "Builds all the binaries using the default profile"
                 this.ext = extension
@@ -127,7 +102,7 @@ class Rust: Plugin<Project> {
         publishTask += addIfConflictingTask(target, publishTask)
         tryRegisterTask {
             target.tasks.register(publishTask, CargoPublish::class.java) {
-                dependsOn("generateCargoManifest", "findCargo")
+                dependsOn("generateCargoManifest")
                 group = "publishing"
                 this.ext = extension
                 setDefaultProperties()
@@ -139,7 +114,7 @@ class Rust: Plugin<Project> {
         testTask += addIfConflictingTask(target, testTask)
         tryRegisterTask {
             target.tasks.register(testTask, CargoTest::class.java) {
-                dependsOn("generateCargoManifest", "findCargo")
+                dependsOn("generateCargoManifest")
                 group = "verification"
                 this.ext = extension
                 setDefaultProperties()
@@ -163,7 +138,7 @@ class Rust: Plugin<Project> {
                 val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
                 val cargoBuildTask = tryRegisterTask {
                     target.tasks.register(binaryBuildTask, CargoBuild::class.java) {
-                        dependsOn("generateCargoManifest", "findCargo")
+                        dependsOn("generateCargoManifest")
                         group = "build"
                         description = "Build '$lowercaseBinaryName' using the global build profile"
 
@@ -200,6 +175,22 @@ class Rust: Plugin<Project> {
                         this.environment.set(binary.environment.get())
                     }.get()
                 }
+            }
+
+            try {
+                val execResult = Instrumented.exec(Runtime.getRuntime(), "cargo version", "")
+
+                execResult.waitFor()
+
+                if (execResult.exitValue() != 0) {
+                    val error = "Command failed with exit value: ${execResult.exitValue()}"
+                    logger.error(error)
+                    throw RuntimeException(error)
+                }
+            } catch (_: IOException) {
+                val error = "Cannot find cargo. Install it or set the path environment variable for your system"
+                logger.error(error)
+                throw RuntimeException(error)
             }
         }
     }

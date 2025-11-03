@@ -13,6 +13,7 @@ import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustManifestOptions.Library
 import asia.hombre.neorust.options.RustManifestOptions.Package
+import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
@@ -166,6 +167,14 @@ fun RustExtension.targets(rustTargetOptions: Action<RustTargetOptions>) {
 @Suppress("unused")
 fun RustManifestOptions.packaging(packageConfig: Action<Package>) {
     packageConfig.execute(this.packageConfig)
+}
+
+/**
+ * Crate compiler options
+ */
+@Suppress("unused")
+fun RustExtension.profiles(rustProfileOptions: Action<RustProfileOptions>) {
+    rustProfileOptions.execute(this.rustProfileOptions)
 }
 
 /**

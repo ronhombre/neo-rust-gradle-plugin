@@ -5,6 +5,7 @@ import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
+import asia.hombre.neorust.options.RustProfileOptions
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -28,6 +29,8 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
     abstract val crateLibrary: Property<CrateLibrary>
     @get:Input
     abstract val rustManifestOptions: Property<RustManifestOptions>
+    @get:Input
+    abstract val rustProfileOptions: Property<RustProfileOptions>
     @get:Input
     abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
     @get:Input
@@ -116,6 +119,30 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
                 writeBooleanField("autotests", packageOptions.autoTests.get())
             if(packageOptions.autoBenches.isPresent)
                 writeBooleanField("autobenches", packageOptions.autoBenches.get())
+        }
+
+        if(rustProfileOptions.get().dev.get().isNotEmpty()) content.writeTable("profile.dev") {
+            rustProfileOptions.get().dev.get().forEach { dev ->
+                writeField(dev.key, dev.value)
+            }
+        }
+
+        if(rustProfileOptions.get().release.get().isNotEmpty()) content.writeTable("profile.release") {
+            rustProfileOptions.get().release.get().forEach { release ->
+                writeField(release.key, release.value)
+            }
+        }
+
+        if(rustProfileOptions.get().test.get().isNotEmpty()) content.writeTable("profile.test") {
+            rustProfileOptions.get().test.get().forEach { test ->
+                writeField(test.key, test.value)
+            }
+        }
+
+        if(rustProfileOptions.get().bench.get().isNotEmpty()) content.writeTable("profile.bench") {
+            rustProfileOptions.get().bench.get().forEach { bench ->
+                writeField(bench.key, bench.value)
+            }
         }
 
         rustFeaturesOptions.get().list.addAll(featuresList.get().map { feature ->

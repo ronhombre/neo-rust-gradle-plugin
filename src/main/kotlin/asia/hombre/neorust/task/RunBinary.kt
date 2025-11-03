@@ -13,6 +13,8 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import javax.inject.Inject
 import kotlin.io.path.Path
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 /**
  * Runs a binary executable built by Cargo
@@ -38,6 +40,7 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
     @get:Input
     abstract val environment: MapProperty<String, String>
 
+    @OptIn(ExperimentalTime::class)
     @TaskAction
     fun execute() {
         val path = if(targetDirectory.isPresent) {
@@ -66,11 +69,15 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
             binaryName.get()
         }
 
-        execOperations.exec {
-            commandLine(folder.resolve(executableFileName))
-            commandLine.addAll(arguments.get())
+        val execTime = measureTime {
+            execOperations.exec {
+                commandLine(folder.resolve(executableFileName))
+                commandLine.addAll(arguments.get())
 
-            environment(this@RunBinary.environment.get())
+                environment(this@RunBinary.environment.get())
+            }
         }
+
+        println("Executing $executableFileName took $execTime")
     }
 }
