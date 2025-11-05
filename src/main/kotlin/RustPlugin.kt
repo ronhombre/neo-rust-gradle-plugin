@@ -28,7 +28,6 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.model.ObjectFactory
 import java.util.*
-import kotlin.io.path.Path
 
 internal fun CargoDefaultTask.setDefaultProperties() {
     packageSelect.convention(ext.packageSelect)
@@ -332,11 +331,11 @@ private fun CrateLibrary.configureAndGetGradleCrate(
             //Apply user configuration
             options?.execute(crate)
 
-            val manifestPath = Path(rustExtension.manifestPath.get()).parent
-            val mainProjectPath = Path(parentRustExtension.manifestPath.get()).parent
+            val manifestPath = rustExtension.manifestPath.get().asFile.parentFile
+            val mainProjectPath = parentRustExtension.manifestPath.get().asFile.parentFile
 
             //Create a relative path since that's what Cargo wants
-            val relativePath = mainProjectPath.relativize(manifestPath)
+            val relativePath = manifestPath.toRelativeString(mainProjectPath)
 
             //Warn that we have overwritten 'path'
             if(crate.path.isPresent && crate.path.get().isNotBlank()) {

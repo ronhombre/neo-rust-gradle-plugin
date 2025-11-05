@@ -4,10 +4,12 @@ import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.task.CargoClean
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
@@ -67,9 +69,8 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     @get:Optional
     abstract val features: Property<String>
 
-    @get:Input
-    @get:Optional
-    abstract val manifestPath: Property<String>
+    @get:InputFile
+    abstract val manifestPath: RegularFileProperty
 
     @get:Input
     @get:Optional
@@ -164,9 +165,8 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
         if(noDefaultFeatures.getOrElse(false) && this !is CargoClean)
             args.add("--no-default-features")
 
-        manifestPath.apply {
-            if(isPresent && get().isNotBlank())
-                args.addAll(listOf("--manifest-path", get()))
+        manifestPath.get().asFile.apply {
+            args.addAll(listOf("--manifest-path", this.absolutePath))
         }
 
         if(ignoreRustVersion.getOrElse(false))
@@ -218,7 +218,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     fun run() {
         cmd.exec {
-            commandLine = compileArgs()
+            commandLine = compileArgs().also { println(it.joinToString(" ")) }
         }
     }
 

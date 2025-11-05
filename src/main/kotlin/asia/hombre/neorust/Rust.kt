@@ -1,9 +1,11 @@
 package asia.hombre.neorust
 
 import asia.hombre.neorust.extension.RustExtension
+import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.option.BuildProfile
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
+import asia.hombre.neorust.task.CargoCheck
 import asia.hombre.neorust.task.CargoClean
 import asia.hombre.neorust.task.CargoManifestGenerate
 import asia.hombre.neorust.task.CargoPublish
@@ -14,7 +16,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
-import org.gradle.internal.classpath.Instrumented
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import setBenchProperties
 import setBuildProperties
@@ -22,7 +23,6 @@ import setDefaultProperties
 import setPublishProperties
 import setTargettedProperties
 import setTestProperties
-import java.io.IOException
 
 @Suppress("unused")
 class Rust: Plugin<Project> {
@@ -36,6 +36,14 @@ class Rust: Plugin<Project> {
             println("Warning: Test environment detected!\nConfigs and Tasks are now explicitly named.")
 
         //Tasks
+        target.tasks.register("checkCargoExists", CargoCheck::class.java) {
+            checkCache.set(target.layout.buildDirectory.file(".cargo-exists"))
+
+            onlyIf {
+                !checkCache.get().asFile.exists()
+            }
+        }
+
         tryRegisterTask {
             target.tasks.register("generateCargoManifest", CargoManifestGenerate::class.java) {
                 group = "build"
@@ -65,6 +73,8 @@ class Rust: Plugin<Project> {
                 this.ext = extension
                 setDefaultProperties()
                 setTargettedProperties()
+
+                inputs.file(manifestPath)
             }.get()
         }
 
@@ -78,6 +88,8 @@ class Rust: Plugin<Project> {
                 setDefaultProperties()
                 setTargettedProperties()
                 setBenchProperties()
+
+                inputs.file(manifestPath)
             }.get()
         }
 
@@ -95,6 +107,8 @@ class Rust: Plugin<Project> {
                 this.bin.addAll(target.provider<Iterable<String>> {
                     extension.rustBinaryOptions.list.map { it.name.get() }.toSet().asIterable()
                 })
+
+                inputs.file(manifestPath)
             }.get()
         }
 
@@ -107,6 +121,8 @@ class Rust: Plugin<Project> {
                 this.ext = extension
                 setDefaultProperties()
                 setPublishProperties()
+
+                inputs.file(manifestPath)
             }.get()
         }
 
@@ -121,6 +137,8 @@ class Rust: Plugin<Project> {
                 setTargettedProperties()
                 setBenchProperties()
                 setTestProperties()
+
+                inputs.file(manifestPath)
             }.get()
         }
 
@@ -154,6 +172,8 @@ class Rust: Plugin<Project> {
                         }
                         this.bin.set(mutableListOf()) //Get off the Global property
                         this.bin.add(binary.name.get())
+
+                        inputs.file(manifestPath)
                     }.get()
                 } as CargoBuild
                 tryRegisterTask {
@@ -163,7 +183,7 @@ class Rust: Plugin<Project> {
                         description = "Execute binary '$lowercaseBinaryName' using the profile '$lowercaseProfile'"
 
                         this.targetDirectory.set(extension.targetDirectory)
-                        this.manifestDirectory.set(extension.manifestPath)
+                        this.manifestPath.set(extension.manifestPath)
                         this.binaryName.set(lowercaseBinaryName)
                         this.buildProfile.set(
                             if(cargoBuildTask.release.isPresent && cargoBuildTask.release.get())
@@ -173,6 +193,8 @@ class Rust: Plugin<Project> {
                         )
                         this.arguments.set(binary.arguments.get())
                         this.environment.set(binary.environment.get())
+
+                        inputs.file(manifestPath)
                     }.get()
                 }
             }
@@ -190,6 +212,8 @@ class Rust: Plugin<Project> {
                         setTargettedProperties()
                         setBuildProperties()
                         this.lib.set(true)
+
+                        inputs.file(manifestPath)
                     }.get()
                 }
                 var buildLibraryReleaseTask = "buildLibraryOnlyRelease" + addIfTest()
@@ -205,24 +229,16 @@ class Rust: Plugin<Project> {
                         setBuildProperties()
                         this.lib.set(true)
                         this.release.set(true)
+
+                        inputs.file(manifestPath)
                     }.get()
                 }
             }
 
-            try {
-                val execResult = Instrumented.exec(Runtime.getRuntime(), "cargo version", "")
-
-                execResult.waitFor()
-
-                if (execResult.exitValue() != 0) {
-                    val error = "Command failed with exit value: ${execResult.exitValue()}"
-                    logger.error(error)
-                    throw RuntimeException(error)
+            target.tasks.configureEach {
+                if(this is CargoDefaultTask) {
+                    dependsOn.add("checkCargoExists")
                 }
-            } catch (_: IOException) {
-                val error = "Cannot find cargo. Install it or set the path environment variable for your system"
-                logger.error(error)
-                throw RuntimeException(error)
             }
         }
     }

@@ -4,15 +4,17 @@ import isMac
 import isUnix
 import isWindows
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
+import java.io.File
 import javax.inject.Inject
-import kotlin.io.path.Path
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -29,8 +31,8 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
     @get:Input
     @get:Optional
     abstract val targetDirectory: Property<String>
-    @get:Input
-    abstract val manifestDirectory: Property<String>
+    @get:InputFile
+    abstract val manifestPath: RegularFileProperty
     @get:Input
     abstract val binaryName: Property<String>
     @get:Input
@@ -43,13 +45,11 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
     @OptIn(ExperimentalTime::class)
     @TaskAction
     fun execute() {
-        val path = if(targetDirectory.isPresent) {
-            Path(targetDirectory.get())
+        val folder = if(targetDirectory.isPresent) {
+            File(targetDirectory.get())
         } else {
-            Path(manifestDirectory.get()).parent.resolve("target")
+            manifestPath.get().asFile.parentFile.resolve("target")
         }.resolve(buildProfile.get())
-
-        val folder = path.toFile()
 
         val wasFolderCreated = folder.mkdirs()
 

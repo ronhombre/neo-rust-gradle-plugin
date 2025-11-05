@@ -11,11 +11,13 @@ import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import java.nio.file.Path
@@ -76,8 +78,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @get:Optional
     abstract val noDefaultFeatures: Property<Boolean>
 
-    @get:Input
-    abstract val manifestPath: Property<String>
+    @get:InputFile
+    abstract val manifestPath: RegularFileProperty
 
     @get:Input
     @get:Optional
@@ -132,7 +134,7 @@ abstract class RustExtension @Inject constructor(project: Project) {
     abstract val unstableFlags: ListProperty<String>
 
     init {
-        manifestPath.convention(project.layout.buildDirectory.file("Cargo.toml").get().asFile.absolutePath)
+        manifestPath.convention(project.layout.buildDirectory.file("Cargo.toml"))
     }
 
     /*@Internal

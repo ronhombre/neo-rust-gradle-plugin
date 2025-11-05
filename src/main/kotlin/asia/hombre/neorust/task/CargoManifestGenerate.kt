@@ -14,7 +14,6 @@ import writeBooleanField
 import writeCrateField
 import writeField
 import writeTable
-import java.io.File
 import javax.inject.Inject
 
 /**
@@ -39,7 +38,7 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
     abstract val featuresList: MapProperty<String, List<String>>
 
     override fun cargoTaskAction() {
-        val cargoToml = File(manifestPath.get())
+        val cargoToml = manifestPath.get().asFile
         //Create parent directories if they don't exist.
         cargoToml.parentFile.mkdirs()
         //Delete old Cargo.toml since it might be outdated.
