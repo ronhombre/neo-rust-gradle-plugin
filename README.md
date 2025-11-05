@@ -68,8 +68,17 @@ project-root/
         └── rust/
             └── main.rs  # Your main Rust file (location configurable)
 ```
+### Installation
+`build.gradle.kts`
+```kotlin
+plugins {
+    id("asia.hombre.neorust") version "0.4.0"
+}
+```
 
 ## Sample Code
+### Rust Projects Using This Plugin
+* [KeccakRust](https://github.com/ronhombre/KeccakRust)
 ### Gradle Kotlin DSL (build.gradle.kts)
 ```kotlin
 import asia.hombre.neorust.task.CargoBench
@@ -189,10 +198,10 @@ tasks.getByName<CargoTest>("test") { //Becomes testRust if conflicting a task na
 Neo Rust Gradle Plugin was designed this way to allow fine-level control over the command options where developers need
 it.
 
-## Requirements
+## Building Requirements
 * Cargo (and its dependencies)
 * Gradle
-* JDK 17.0+
+* JDK 17.0+ (8 if you're simply using the plugin)
 
 These haven't been concretely determined. Please try it out and tell me if it works or not!
 
@@ -204,9 +213,6 @@ These haven't been concretely determined. Please try it out and tell me if it wo
 5. Create a pull request mentioning the issue number.
 6. Wait for a maintainer to accept or request additional changes.
 7. Voila!
-
-**From Ron: _I'm looking for three active maintainers to look over the project. If you love this project, please find me on
-Linkedin connected to my Github Profile or the Discord Server below._**
 
 Hire me at [Linkedin](https://www.linkedin.com/in/rlhombre/) if you want exclusive development on this project
 
