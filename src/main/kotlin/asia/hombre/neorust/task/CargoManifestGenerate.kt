@@ -40,13 +40,13 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
 
     @get:Nested
     internal abstract val crateLibrary: Property<CrateLibrary>
-    @get:Input
+    @get:Nested
     internal abstract val rustManifestOptions: Property<RustManifestOptions>
-    @get:Input
+    @get:Nested
     internal abstract val rustProfileOptions: Property<RustProfileOptions>
-    @get:Input
+    @get:Nested
     internal abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
-    @get:Input
+    @get:Nested
     internal abstract val rustBinaryOptions: Property<RustBinaryOptions>
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -187,13 +187,16 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             }
         }
 
-        rustFeaturesOptions.get().list.addAll(featuresList.get().map { feature ->
+        val featuresMap: MutableList<RustFeaturesOptions.Feature> = mutableListOf()
+
+        featuresMap.addAll(rustFeaturesOptions.get().list.get())
+        featuresMap.addAll(featuresList.get().map { feature ->
             RustFeaturesOptions.Feature(feature.key, feature.value)
         })
 
-        if(rustFeaturesOptions.get().list.get().isNotEmpty()) {
+        if(featuresMap.isNotEmpty()) {
             content.writeTable("features") {
-                rustFeaturesOptions.get().list.get().forEach { feature ->
+                featuresMap.forEach { feature ->
                     writeArrayField(feature.name, feature.values, true)
                 }
             }

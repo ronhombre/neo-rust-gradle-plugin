@@ -1,7 +1,8 @@
 package asia.hombre.neorust.options
 
 import org.gradle.api.provider.ListProperty
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Input
+import java.io.Serializable
 import javax.inject.Inject
 
 /**
@@ -11,8 +12,8 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class RustFeaturesOptions @Inject constructor() {
-    @get:Internal
+    @get:Input
     internal abstract val list: ListProperty<Feature>
 
-    internal data class Feature(val name: String, val values: List<String>)
+    internal data class Feature(val name: String, val values: List<String>): Serializable
 }

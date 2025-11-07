@@ -6,7 +6,7 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
@@ -20,7 +20,7 @@ abstract class RustBinaryOptions @Inject constructor() {
     @get:Inject
     internal abstract val objectFactory: ObjectFactory
 
-    @get:Internal
+    @get:Nested
     internal abstract val list: ListProperty<Binary>
 
     abstract class Binary {
