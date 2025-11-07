@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "asia.hombre.neorust"
-version = "0.4.1"
+version = "0.5.0"
 description = "Build Rust Crates within Gradle and integrate with other Gradle projects"
 val officialName = "Neo Rust Gradle Plugin"
 
@@ -41,7 +41,6 @@ gradlePlugin {
             version = project.version.toString()
             description = project.description
             displayName = officialName
-            @Suppress("UnstableApiUsage")
             tags.set(listOf("rust", "cargo"))
         }
     }
