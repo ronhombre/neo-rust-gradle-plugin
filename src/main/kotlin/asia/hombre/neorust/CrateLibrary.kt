@@ -2,7 +2,9 @@ package asia.hombre.neorust
 
 import asia.hombre.neorust.options.RustCrateOptions
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.tasks.Internal
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.tasks.Nested
+import javax.inject.Inject
 
 /**
  * Holds crates used in this project
@@ -10,11 +12,20 @@ import org.gradle.api.tasks.Internal
  * @since 0.4.0
  * @author Ron Lauren Hombre
  */
-class CrateLibrary(@Internal internal val projectName: String, @Internal internal val objects: ObjectFactory) {
-    @Internal
-    internal val dependencies: MutableList<RustCrateOptions> = mutableListOf()
-    @Internal
-    internal val buildDependencies: MutableList<RustCrateOptions> = mutableListOf()
-    @Internal
-    internal val devDependencies: MutableList<RustCrateOptions> = mutableListOf()
+internal abstract class CrateLibrary @Inject constructor() {
+    @get:Inject
+    internal abstract val objects: ObjectFactory
+
+    @get:Nested
+    internal abstract val dependencies: ListProperty<RustCrateOptions>
+    @get:Nested
+    internal abstract val devDependencies: ListProperty<RustCrateOptions>
+    @get:Nested
+    internal abstract val buildDependencies: ListProperty<RustCrateOptions>
+    @get:Nested
+    internal abstract val unresolvedDependencies: ListProperty<RustCrateOptions>
+    @get:Nested
+    internal abstract val unresolvedDevDependencies: ListProperty<RustCrateOptions>
+    @get:Nested
+    internal abstract val unresolvedBuildDependencies: ListProperty<RustCrateOptions>
 }

@@ -1,19 +1,31 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.CrateLibrary
-import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.options.RustBinaryOptions
+import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
+import asia.hombre.neorust.serializable.RustCrateObject
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
 import writeArrayField
 import writeBooleanField
 import writeCrateField
 import writeField
 import writeTable
+import java.io.File
+import java.io.FileInputStream
+import java.io.ObjectInputStream
 import javax.inject.Inject
 
 /**
@@ -22,35 +34,66 @@ import javax.inject.Inject
  * @since 0.2.0
  * @author Ron Lauren Hombre
  */
-abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
+abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
+    @get:Inject
+    internal abstract val objects: ObjectFactory
 
+    @get:Nested
+    internal abstract val crateLibrary: Property<CrateLibrary>
     @get:Input
-    abstract val crateLibrary: Property<CrateLibrary>
+    internal abstract val rustManifestOptions: Property<RustManifestOptions>
     @get:Input
-    abstract val rustManifestOptions: Property<RustManifestOptions>
+    internal abstract val rustProfileOptions: Property<RustProfileOptions>
     @get:Input
-    abstract val rustProfileOptions: Property<RustProfileOptions>
+    internal abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
     @get:Input
-    abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
+    internal abstract val rustBinaryOptions: Property<RustBinaryOptions>
     @get:Input
-    abstract val rustBinaryOptions: Property<RustBinaryOptions>
-    @get:Input
-    abstract val featuresList: MapProperty<String, List<String>>
+    internal abstract val featuresList: MapProperty<String, List<String>>
+    @get:InputDirectory
+    internal abstract val resolvedCrates: DirectoryProperty
 
-    override fun cargoTaskAction() {
+    @get:OutputFile
+    abstract val manifestPath: RegularFileProperty
+
+    @TaskAction
+    fun generateManifest() {
         val cargoToml = manifestPath.get().asFile
         //Create parent directories if they don't exist.
-        cargoToml.parentFile.mkdirs()
         //Delete old Cargo.toml since it might be outdated.
         if(cargoToml.exists()) cargoToml.delete()
 
         val manifestOptions = rustManifestOptions.get()
-        val dependencies = crateLibrary.get().dependencies
-        val devDependencies = crateLibrary.get().devDependencies
-        val buildDependencies = crateLibrary.get().buildDependencies
+
+        val resolvedDir = resolvedCrates.get().asFile
+
+        //Collect all crates to their own lists so we can append resolved crates
+        val dependencies = mutableListOf<RustCrateOptions>()
+        val devDependencies = mutableListOf<RustCrateOptions>()
+        val buildDependencies = mutableListOf<RustCrateOptions>()
+
+        dependencies.addAll(crateLibrary.get().dependencies.get())
+        devDependencies.addAll(crateLibrary.get().devDependencies.get())
+        buildDependencies.addAll(crateLibrary.get().buildDependencies.get())
+
+        //Add all resolved crates from Gradle subprojects
+        dependencies.addAll(resolvedDir.resolve("crates").listFiles()?.map(::readFromFile)?: emptyList())
+        devDependencies.addAll(resolvedDir.resolve("devCrates").listFiles()?.map(::readFromFile)?: emptyList())
+        buildDependencies.addAll(resolvedDir.resolve("buildCrates").listFiles()?.map(::readFromFile)?: emptyList())
+
+        //Apply configuration for resolved crates
+        crateLibrary.get().unresolvedDependencies.get().forEach { crate ->
+            dependencies.find { it.name == crate.name }?.copyIfNotSetFrom(crate)
+        }
+        crateLibrary.get().unresolvedDevDependencies.get().forEach { crate ->
+            devDependencies.find { it.name == crate.name }?.copyIfNotSetFrom(crate)
+        }
+        crateLibrary.get().unresolvedBuildDependencies.get().forEach { crate ->
+            buildDependencies.find { it.name == crate.name }?.copyIfNotSetFrom(crate)
+        }
 
         val content = StringBuilder()
-        val packageOptions = manifestOptions.packageConfig
+        val packageOptions = manifestOptions.packageConfig.get()
 
         content.append(
             """
@@ -148,9 +191,9 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
             RustFeaturesOptions.Feature(feature.key, feature.value)
         })
 
-        if(rustFeaturesOptions.get().list.isNotEmpty()) {
+        if(rustFeaturesOptions.get().list.get().isNotEmpty()) {
             content.writeTable("features") {
-                rustFeaturesOptions.get().list.forEach { feature ->
+                rustFeaturesOptions.get().list.get().forEach { feature ->
                     writeArrayField(feature.name, feature.values, true)
                 }
             }
@@ -180,7 +223,7 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
             }
         }
 
-        val libOptions = manifestOptions.libConfig
+        val libOptions = manifestOptions.libConfig.get()
 
         if(libOptions.crateType.isPresent && libOptions.crateType.get().isNotEmpty()) content.writeTable("lib") {
             writeField("path", "../${libOptions.path.get()}")
@@ -189,7 +232,7 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
 
         val previousBinaries = mutableListOf<String>()
 
-        rustBinaryOptions.get().list.forEach { binary ->
+        rustBinaryOptions.get().list.get().forEach { binary ->
             if(previousBinaries.contains(binary.name.get())) return@forEach
             content.writeTable("[bin]") {
                 writeField("name", binary.name.get())
@@ -217,5 +260,28 @@ abstract class CargoManifestGenerate @Inject constructor(): CargoDefaultTask() {
         }*/
 
         cargoToml.writeText(content.removePrefix("\n").toString())
+    }
+
+    private fun readFromFile(file: File): RustCrateOptions {
+        assert(file.name.endsWith(".rc")) {
+            "Attempted to read file $file but it's not a Java serialized RustCrateObject"
+        }
+        try {
+            FileInputStream(file).use {
+                val rustCrateObject = ObjectInputStream(it).readObject() as RustCrateObject
+
+                val crateOptions = objects.newInstance(
+                    RustCrateOptions::class.java,
+                    rustCrateObject.name,
+                    rustCrateObject.version
+                )
+
+                crateOptions.fromObject(rustCrateObject)
+
+                return crateOptions
+            }
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to deserialize file $file back to a RustCrateObject. Is it corrupted?", e)
+        }
     }
 }

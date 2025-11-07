@@ -10,12 +10,14 @@ import asia.hombre.neorust.task.CargoClean
 import asia.hombre.neorust.task.CargoManifestGenerate
 import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
+import asia.hombre.neorust.task.ResolveCrates
 import asia.hombre.neorust.task.RunBinary
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.Category
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import setBenchProperties
 import setBuildProperties
@@ -28,7 +30,7 @@ import setTestProperties
 class Rust: Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions.create("rust", RustExtension::class.java)
-        val crateLibrary = CrateLibrary(target.name, target.objects)
+        val crateLibrary = target.objects.newInstance(CrateLibrary::class.java)
         target.dependencies.extensions.add("rustDependencies", crateLibrary)
 
         //Detect test environment
@@ -44,20 +46,79 @@ class Rust: Plugin<Project> {
             }
         }
 
-        tryRegisterTask {
+        val crates = target.configurations.create("crateNoConfigure") {
+            isCanBeResolved = true
+            isCanBeConsumed = false
+            attributes {
+                attribute(Category.CATEGORY_ATTRIBUTE, target.objects.named(Category::class.java, "cargo-manifest"))
+            }
+        }
+
+        val devCrates = target.configurations.create("devCrateNoConfigure") {
+            isCanBeResolved = true
+            isCanBeConsumed = false
+            attributes {
+                attribute(Category.CATEGORY_ATTRIBUTE, target.objects.named(Category::class.java, "cargo-manifest"))
+            }
+        }
+
+        val buildCrates = target.configurations.create("buildCrateNoConfigure") {
+            isCanBeResolved = true
+            isCanBeConsumed = false
+            attributes {
+                attribute(Category.CATEGORY_ATTRIBUTE, target.objects.named(Category::class.java, "cargo-manifest"))
+            }
+        }
+
+        val resolveCrates = tryRegisterTask {
+            target.tasks.register("resolveCrates", ResolveCrates::class.java) {
+                inputs.files(crates)
+                inputs.files(devCrates)
+                inputs.files(buildCrates)
+
+                cratesArtifacts.set(crates.incoming.artifacts)
+                devCratesArtifacts.set(devCrates.incoming.artifacts)
+                buildCratesArtifacts.set(buildCrates.incoming.artifacts)
+                referenceManifestPath.set(extension.manifestPath)
+                resolvedOutput.set(target.layout.buildDirectory.dir("resolver"))
+
+                outputs.dir(resolvedOutput)
+            }.get()
+        } as ResolveCrates
+
+        val generateCargoManifest = tryRegisterTask {
             target.tasks.register("generateCargoManifest", CargoManifestGenerate::class.java) {
                 group = "build"
-                this.ext = extension
-                setDefaultProperties()
-
                 rustManifestOptions.set(extension.rustManifestOptions)
                 rustProfileOptions.set(extension.rustProfileOptions)
                 rustBinaryOptions.set(extension.rustBinaryOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
+                manifestPath.set(extension.manifestPath)
+                resolvedCrates.set(resolveCrates.resolvedOutput)
+
+                inputs.dir(resolvedCrates)
+                outputs.file(manifestPath)
             }.get()
+        } as CargoManifestGenerate
+
+        target.configurations.create("crateElements") {
+            isCanBeResolved = false
+            isCanBeConsumed = true
+            isVisible = false
+            @Suppress("UnstableApiUsage")
+            isCanBeDeclared = false
+            attributes {
+                attribute(Category.CATEGORY_ATTRIBUTE, target.objects.named(Category::class.java, "cargo-manifest"))
+            }
+            outgoing {
+                artifact(generateCargoManifest.manifestPath) {
+                    builtBy(generateCargoManifest)
+                }
+            }
         }
+
         /*tryRegisterTask {
             target.tasks.register("generateCargoConfig", CargoConfigGenerate::class.java) {
                 group = "build"
@@ -69,12 +130,11 @@ class Rust: Plugin<Project> {
         cleanTask += addIfConflictingTask(target, cleanTask)
         tryRegisterTask {
             target.tasks.register(cleanTask, CargoClean::class.java) {
+                dependsOn("generateCargoManifest")
                 group = "build"
                 this.ext = extension
                 setDefaultProperties()
                 setTargettedProperties()
-
-                inputs.file(manifestPath)
             }.get()
         }
 
@@ -105,7 +165,7 @@ class Rust: Plugin<Project> {
                 setTargettedProperties()
                 setBuildProperties()
                 this.bin.addAll(target.provider<Iterable<String>> {
-                    extension.rustBinaryOptions.list.map { it.name.get() }.toSet().asIterable()
+                    extension.rustBinaryOptions.list.get().map { it.name.get() }.toSet().asIterable()
                 })
 
                 inputs.file(manifestPath)
@@ -143,11 +203,12 @@ class Rust: Plugin<Project> {
         }
 
         target.afterEvaluate {
-            extension.rustManifestOptions.packageConfig.name.convention(project.name)
-            extension.rustManifestOptions.packageConfig.version.convention(project.version.toString())
-            extension.rustManifestOptions.packageConfig.description.convention(project.description)
+            val packageConfig = extension.rustManifestOptions.packageConfig.get()
+            packageConfig.name.convention(project.name)
+            packageConfig.version.convention(project.version.toString())
+            packageConfig.description.convention(project.description)
 
-            extension.rustBinaryOptions.list.forEach { binary ->
+            extension.rustBinaryOptions.list.get().forEach { binary ->
                 val lowercaseBinaryName = binary.name.get().lowercase()
                 val buildProfile = binary.buildProfile.get()
                 val lowercaseProfile = buildProfile.name.lowercase()
@@ -199,7 +260,7 @@ class Rust: Plugin<Project> {
                 }
             }
 
-            if(extension.rustManifestOptions.libConfig.crateType.isPresent) {
+            if(extension.rustManifestOptions.libConfig.get().crateType.isPresent) {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {

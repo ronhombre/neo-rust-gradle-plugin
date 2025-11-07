@@ -17,12 +17,11 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class RustBinaryOptions @Inject constructor() {
-    @get:Internal
     @get:Inject
     internal abstract val objectFactory: ObjectFactory
 
-    @Internal
-    internal val list: MutableList<Binary> = mutableListOf()
+    @get:Internal
+    internal abstract val list: ListProperty<Binary>
 
     abstract class Binary {
         @get:Input

@@ -19,14 +19,15 @@ import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
-import asia.hombre.neorust.task.CargoManifestGenerate
 import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 import org.gradle.api.Action
-import org.gradle.api.UnknownDomainObjectException
+import org.gradle.api.IllegalDependencyNotation
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.model.ObjectFactory
+import java.io.File
 import java.util.*
 
 internal fun CargoDefaultTask.setDefaultProperties() {
@@ -165,7 +166,7 @@ fun RustExtension.targets(rustTargetOptions: Action<RustTargetOptions>) {
  */
 @Suppress("unused")
 fun RustManifestOptions.packaging(packageConfig: Action<Package>) {
-    packageConfig.execute(this.packageConfig)
+    packageConfig.execute(this.packageConfig.get())
 }
 
 /**
@@ -181,7 +182,7 @@ fun RustExtension.profiles(rustProfileOptions: Action<RustProfileOptions>) {
  */
 @Suppress("unused")
 fun RustManifestOptions.lib(libConfig: Action<Library>) {
-    libConfig.execute(this.libConfig)
+    libConfig.execute(this.libConfig.get())
 }
 
 /**
@@ -195,7 +196,7 @@ fun RustBinaryOptions.register(name: String, binary: Action<Binary>? = null) {
     binary?.execute(bin)
 
     if(bin.name.isPresent) {
-        this.list.find {
+        this.list.get().find {
             it.name.get() == bin.name.get() && it.buildProfile.get() == bin.buildProfile.get()
         }?.let {
             throw DuplicateBinaryTargetException(
@@ -226,10 +227,6 @@ internal fun isMac(): Boolean {
 
 internal fun isUnix(): Boolean {
     return (OS.contains("nix") || OS.contains("nux") || OS.contains("aix"))
-}
-
-internal fun isSolaris(): Boolean {
-    return OS.contains("sunos")
 }
 
 internal inline fun StringBuilder.writeTable(name: String, block: StringBuilder.() -> Unit) {
@@ -292,127 +289,136 @@ internal fun StringBuilder.writeCrateField(crate: RustCrateOptions) {
     }
 }
 
-private fun Action<RustCrateOptions>?.get(objectFactory: ObjectFactory, nameVersion: String): RustCrateOptions {
-    val options = objectFactory.newInstance<RustCrateOptions>(
-        RustCrateOptions::class.java,
-        nameVersion.substringBefore(":"),
-        nameVersion.substringAfter(":")
-    )
+/**
+ * Tries to read a list of TOML fields. Returns nothing if it doesn't exist or is not a String.
+ *
+ * We're not using an external TOML parser to avoid bloat.
+ */
+internal fun File.readTomlStringFields(objectKey: String, keys: List<String>): MutableMap<String, String> {
+    val searchSpace = keys.toSet().toMutableList() //Remove duplicates and remove if already found
+    val result = mutableMapOf<String, String>()
+    var isInParent = false
+    this.readLines().forEach { line ->
+        if(!isInParent) {
+            val objectCandidate = line.substringAfter("[").substringBefore("]").trim()
 
-    this?.execute(options)
-
-    return options
-}
-
-private fun CrateLibrary.configureAndGetGradleCrate(
-    dependency: ProjectDependency,
-    targetList: MutableList<RustCrateOptions>,
-    options: Action<RustCrateOptions>?
-) {
-    //Shortened for readability and convenience
-    val project = dependency.dependencyProject
-    project.afterEvaluate {
-        val parentProject = project.rootProject.findProject(this@configureAndGetGradleCrate.projectName)?: run {
-            project.logger.error("Unable to find parent project when adding ${project.name} as crate.")
-            return@afterEvaluate
+            if(objectCandidate == objectKey) {
+                isInParent = true
+            }
+            return@forEach
         }
-        try {
-            val parentRustExtension = parentProject.extensions.getByType(RustExtension::class.java)
-            val rustExtension = project.extensions.getByType(RustExtension::class.java)
 
-            //Wire tasks
-            parentProject.tasks.withType(CargoManifestGenerate::class.java).forEach {
-                it.dependsOn(project.tasks.withType(CargoManifestGenerate::class.java))
+        if(line.isBlank()) isInParent = false
+        val iterator = searchSpace.iterator()
+        while(iterator.hasNext()) {
+            val key = iterator.next()
+            if(line.length >= key.length && line.substring(0, key.length) == key) {
+                if(line.substringAfter(key, "!").substringBefore("=", "!").isNotBlank()) continue
+                val fieldValue = line.substringAfter("=").trim()
+                if(!fieldValue.startsWith("\"") || !fieldValue.endsWith("\"")) continue
+                result[key] = fieldValue.substring(1, fieldValue.length - 1)
+                iterator.remove()
             }
-
-            //Resolve Gradle project as a Cargo crate project
-            val crate = this.objects.newInstance(RustCrateOptions::class.java, dependency.name, dependency.version)
-
-            //Apply user configuration
-            options?.execute(crate)
-
-            val manifestPath = rustExtension.manifestPath.get().asFile.parentFile
-            val mainProjectPath = parentRustExtension.manifestPath.get().asFile.parentFile
-
-            //Create a relative path since that's what Cargo wants
-            val relativePath = manifestPath.toRelativeString(mainProjectPath)
-
-            //Warn that we have overwritten 'path'
-            if(crate.path.isPresent && crate.path.get().isNotBlank()) {
-                project.logger.warn("The 'path' property is automatically set and has been overwritten.")
-            }
-
-            //Fix Windows pathing. Cargo only recognizes Unix-like paths
-            crate.path.set(relativePath.toString().replace("\\", "/"))
-
-            targetList.add(crate)
-        } catch (e: UnknownDomainObjectException) {
-            project.logger.error("This is not a neo-rust-gradle-plugin supported project.")
-            project.logger.debug(e.stackTraceToString())
         }
     }
+
+    return result
 }
 
-//Non-local crates
+internal fun ResolvedArtifactResult.asRustCrate(objectFactory: ObjectFactory, referenceManifestFile: File): RustCrateOptions? {
+    this.file.readTomlStringFields("package", listOf("name", "version")).apply {
+        val name = get("name")
+        val version = get("version")
+        if(name.isNullOrBlank() || version.isNullOrBlank())
+            throw IllegalArgumentException(
+                "Cannot resolve this Rust crate because the name or version couldn't be found. Name: $name | Version: $version"
+            )
+        val options = objectFactory.newInstance<RustCrateOptions>(RustCrateOptions::class.java, name, version)
 
-/**
- * Add a non-local crate taken from the default registry unless configured
- */
-@Suppress("unused")
-fun DependencyHandler.crate(nameVersion: String, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateLibrary::class.java).apply {
-        dependencies.add(options.get(this.objects, nameVersion))
+        options.path.set(
+            this@asRustCrate
+                .file
+                .parentFile
+                .toRelativeString(referenceManifestFile.parentFile)
+                .replace("\\", "/")
+        )
+
+        return options
+    }
+
+    return null
+}
+
+private fun Any.resolveDependencyNotation(objects: ObjectFactory): RustCrateOptions {
+    return when(this) {
+        is String -> {
+            val name = this.substringBefore(":", "")
+            val version = this.substringAfter(":", "")
+
+            if(name.isBlank() || version.isBlank())
+                throw IllegalArgumentException("Cannot resolve $this to name and version. Format -> `name:version`")
+
+            objects.newInstance(RustCrateOptions::class.java, name, version)
+        }
+        is ProjectDependency -> objects.newInstance(RustCrateOptions::class.java, this.name, "unresolved")
+        else -> throw IllegalDependencyNotation("${this::class.java.name} is not supported.")
     }
 }
 
 /**
- * Add a non-local dev only crate taken from the default registry unless configured
+ * Add a crate
  */
 @Suppress("unused")
-fun DependencyHandler.devCrate(nameVersion: String, options: Action<RustCrateOptions>? = null) {
+fun DependencyHandler.crate(dependencyNotation: Any, options: Action<RustCrateOptions>? = null) {
     this.extensions.getByType(CrateLibrary::class.java).apply {
-        devDependencies.add(options.get(this.objects, nameVersion))
+        val crate = dependencyNotation.resolveDependencyNotation(objects)
+
+        options?.execute(crate)
+
+        if(crate.version == "unresolved") {
+            add("crateNoConfigure", dependencyNotation)
+            unresolvedDependencies.add(crate)
+        } else {
+            dependencies.add(crate)
+        }
     }
 }
 
 /**
- * Add a non-local build only crate taken from the default registry unless configured
+ * Add a dev only crate
  */
 @Suppress("unused")
-fun DependencyHandler.buildCrate(nameVersion: String, options: Action<RustCrateOptions>? = null) {
+fun DependencyHandler.devCrate(dependencyNotation: Any, options: Action<RustCrateOptions>? = null) {
     this.extensions.getByType(CrateLibrary::class.java).apply {
-        buildDependencies.add(options.get(this.objects, nameVersion))
+        val crate = dependencyNotation.resolveDependencyNotation(objects)
+
+        options?.execute(crate)
+
+        if(crate.version == "unresolved") {
+            add("devCrateNoConfigure", dependencyNotation)
+            unresolvedDevDependencies.add(crate)
+        } else {
+            devDependencies.add(crate)
+        }
     }
 }
 
-//Local crates
 
 /**
- * Add a local crate taken from a local Gradle module
+ * Add a build only crate
  */
 @Suppress("unused")
-fun DependencyHandler.crate(project: ProjectDependency, options: Action<RustCrateOptions>? = null) {
+fun DependencyHandler.buildCrate(dependencyNotation: Any, options: Action<RustCrateOptions>? = null) {
     this.extensions.getByType(CrateLibrary::class.java).apply {
-        configureAndGetGradleCrate(project, dependencies, options)
-    }
-}
+        val crate = dependencyNotation.resolveDependencyNotation(objects)
 
-/**
- * Add a local dev only crate taken from a local Gradle module
- */
-@Suppress("unused")
-fun DependencyHandler.devCrate(project: ProjectDependency, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateLibrary::class.java).apply {
-        configureAndGetGradleCrate(project, devDependencies, options)
-    }
-}
+        options?.execute(crate)
 
-/**
- * Add a local build only crate taken from a local Gradle module
- */
-@Suppress("unused")
-fun DependencyHandler.buildCrate(project: ProjectDependency, options: Action<RustCrateOptions>? = null) {
-    this.extensions.getByType(CrateLibrary::class.java).apply {
-        configureAndGetGradleCrate(project, buildDependencies, options)
+        if(crate.version == "unresolved") {
+            add("buildCrateNoConfigure", dependencyNotation)
+            unresolvedBuildDependencies.add(crate)
+        } else {
+            buildDependencies.add(crate)
+        }
     }
 }

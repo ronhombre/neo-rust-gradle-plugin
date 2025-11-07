@@ -4,7 +4,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
@@ -14,11 +14,16 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-open class RustManifestOptions @Inject constructor(objectFactory: ObjectFactory) {
-    @Internal
-    internal val packageConfig = objectFactory.newInstance(Package::class.java)
-    @Internal
-    internal val libConfig = objectFactory.newInstance(Library::class.java)
+abstract class RustManifestOptions @Inject constructor(objectFactory: ObjectFactory) {
+    @get:Nested
+    internal abstract val packageConfig: Property<Package>
+    @get:Nested
+    internal abstract val libConfig: Property<Library>
+
+    init {
+        packageConfig.set(objectFactory.newInstance(Package::class.java))
+        libConfig.set(objectFactory.newInstance(Library::class.java))
+    }
 
     abstract class Package {
         @get:Input
