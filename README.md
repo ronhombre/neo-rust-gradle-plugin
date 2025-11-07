@@ -1,4 +1,4 @@
-# Neo Rust Gradle Plugin (0.4.1)
+# Neo Rust Gradle Plugin (0.5.0)
 A Gradle Plugin to build Rust projects using Gradle as the Build Environment instead of natively using Cargo.
 Gradle is a powerful build tool and utilizing it for Rust projects brings massive benefits as it reduces the complexity
 especially when it comes to projects working with multiple programming languages. Such an example is an Android app that
@@ -12,7 +12,8 @@ developers.
 > [!NOTE]
 > Due to the complexity of Cargo, this plugin should be considered 'beta' until version 1.0.0. There are still many
 > features missing and hasn't been thoroughly tested yet. In the future, I'd like to port large OSS Rust projects into
-> Gradle using my plugin as a final compatibility test.
+> Gradle using my plugin as a final compatibility test. Checkout my Rust project utilizing this plugin for more details
+> [KeccakRust](https://github.com/ronhombre/KeccakRust).
 
 ## Project Versioning
 This project follows the [Semantic Versioning 2.0](https://semver.org/) when updating the version number. As it stands,
@@ -47,13 +48,23 @@ because of its complexity), and limited support for `lib` section.
 | No Plan | Avoided implementing due to design or logic reasons.  |
 
 ### Current Status
-As of version 0.4.1, Neo Rust Gradle Plugin can build, test, benchmark, publish(?, and run most Rust projects without
+As of version 0.5.0, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
 requiring a Cargo.toml file. Additionally, users can use local Gradle modules as crate dependencies
 
 **Key capabilities:**
 - Full support for basic Cargo commands (build, test, bench, publish).
 - Gradle-style dependency management for Rust crates.
 - Custom Cargo.toml manifest generation.
+- Crate features support
+- Run built binaries directly from Gradle
+- Build only the library or the binary you want
+- Idiomatic crate dependency declaration
+- Latest Gradle 9.2.0 support
+- Gradle Parallel Build support (allow tasks to run in different threads)
+- Gradle Configuration Cache support (faster task run)
+- Gradle Incremental Build support (only runs task with updated input)
+- Sub-module support (Declare Gradle projects as crate dependency)
+- Task wiring for projects and sub-projects
 
 We're actively working on expanding support for more complex Rust project structures and additional Cargo features. If
 you need a feature now, consider contributing!
@@ -182,14 +193,6 @@ tasks.getByName<CargoTest>("test") { //Becomes testRust if conflicting a task na
     testThreads.set(2)
 }
 ```
-
-**Last Updated:** 0.4.1
-
-* Crate features support
-* Idiomatic crate dependency declaration
-* Gradle Parallel Build Cache compatibility
-* Sub-module support (Declare Gradle projects as crate dependency)
-* Task wiring for projects and sub-projects
 
 * Global-level Configurations are automatically assigned to Top-level and then Task-level Configurations.
 * Top-level Configurations override Global-level Configurations and are automatically assigned to Task-level Configurations.
