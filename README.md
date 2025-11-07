@@ -83,7 +83,7 @@ project-root/
 `build.gradle.kts`
 ```kotlin
 plugins {
-    id("asia.hombre.neorust") version "0.4.0"
+    id("asia.hombre.neorust") version "0.5.0"
 }
 ```
 
@@ -98,7 +98,7 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.4.1"
+    id("asia.hombre.neorust") version "0.5.0"
 }
 
 dependencies {
