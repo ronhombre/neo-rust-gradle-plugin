@@ -1,4 +1,7 @@
-# Neo Rust Gradle Plugin (0.5.0)
+# Neo Rust Gradle Plugin (0.5.1)
+
+![Gradle Plugin Portal Version](https://img.shields.io/gradle-plugin-portal/v/asia.hombre.neorust?style=for-the-badge&label=neo-rust-gradle-plugin)
+
 A Gradle Plugin to build Rust projects using Gradle as the Build Environment instead of natively using Cargo.
 Gradle is a powerful build tool and utilizing it for Rust projects brings massive benefits as it reduces the complexity
 especially when it comes to projects working with multiple programming languages. Such an example is an Android app that
@@ -48,11 +51,11 @@ because of its complexity), and limited support for `lib` section.
 | No Plan | Avoided implementing due to design or logic reasons.  |
 
 ### Current Status
-As of version 0.5.0, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
+As of version 0.5.1, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
 requiring a Cargo.toml file. Additionally, users can use local Gradle modules as crate dependencies
 
 **Key capabilities:**
-- Full support for basic Cargo commands (build, test, bench, publish).
+- Full support for basic Cargo commands (build, test, bench, publish(?)).
 - Gradle-style dependency management for Rust crates.
 - Custom Cargo.toml manifest generation.
 - Crate features support
@@ -60,14 +63,14 @@ requiring a Cargo.toml file. Additionally, users can use local Gradle modules as
 - Build only the library or the binary you want
 - Idiomatic crate dependency declaration
 - Latest Gradle 9.2.0 support
-- Gradle Parallel Build support (allow tasks to run in different threads)
+- Gradle Parallel Build support (allow tasks to run in different threads at the same time)
 - Gradle Configuration Cache support (faster task run)
-- Gradle Incremental Build support (only runs task with updated input)
+- Gradle Incremental Build support (only runs build when source files are updated, including dependency source files)
 - Sub-module support (Declare Gradle projects as crate dependency)
 - Task wiring for projects and sub-projects
 
 We're actively working on expanding support for more complex Rust project structures and additional Cargo features. If
-you need a feature now, consider contributing!
+you need a feature now, consider contributing or submitting an issue!
 
 ## Project Structure (Similar to Java and Kotlin)
 ```text
@@ -83,7 +86,7 @@ project-root/
 `build.gradle.kts`
 ```kotlin
 plugins {
-    id("asia.hombre.neorust") version "0.5.0"
+    id("asia.hombre.neorust") version "0.5.1"
 }
 ```
 
@@ -98,7 +101,7 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.5.0"
+    id("asia.hombre.neorust") version "0.5.1"
 }
 
 dependencies {
