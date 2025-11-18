@@ -6,7 +6,6 @@ import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
-import asia.hombre.neorust.serializable.RustCrateObject
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -18,14 +17,12 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import readRustCrateFromFile
 import writeArrayField
 import writeBooleanField
 import writeCrateField
 import writeField
 import writeTable
-import java.io.File
-import java.io.FileInputStream
-import java.io.ObjectInputStream
 import javax.inject.Inject
 
 /**
@@ -77,9 +74,9 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         buildDependencies.addAll(crateLibrary.get().buildDependencies.get())
 
         //Add all resolved crates from Gradle subprojects
-        dependencies.addAll(resolvedDir.resolve("crates").listFiles()?.map(::readFromFile)?: emptyList())
-        devDependencies.addAll(resolvedDir.resolve("devCrates").listFiles()?.map(::readFromFile)?: emptyList())
-        buildDependencies.addAll(resolvedDir.resolve("buildCrates").listFiles()?.map(::readFromFile)?: emptyList())
+        dependencies.addAll(resolvedDir.resolve("crates").listFiles()?.map(objects::readRustCrateFromFile)?: emptyList())
+        devDependencies.addAll(resolvedDir.resolve("devCrates").listFiles()?.map(objects::readRustCrateFromFile)?: emptyList())
+        buildDependencies.addAll(resolvedDir.resolve("buildCrates").listFiles()?.map(objects::readRustCrateFromFile)?: emptyList())
 
         //Apply configuration for resolved crates
         crateLibrary.get().unresolvedDependencies.get().forEach { crate ->
@@ -243,7 +240,12 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
                     writeBooleanField("doc", binary.doc.get())
                 if(binary.requiredFeatures.isPresent && binary.requiredFeatures.get().isNotEmpty())
                     writeArrayField("required-features", binary.requiredFeatures.get())
-                writeField("path", "../src/main/rust/main.rs")
+                writeField("path", binary
+                    .path.get()
+                    .asFile
+                    .toRelativeString(cargoToml.parentFile)
+                    .replace("\\", "/")
+                )
             }
             previousBinaries.add(binary.name.get())
         }
@@ -263,28 +265,5 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         }*/
 
         cargoToml.writeText(content.removePrefix("\n").toString())
-    }
-
-    private fun readFromFile(file: File): RustCrateOptions {
-        assert(file.name.endsWith(".rc")) {
-            "Attempted to read file $file but it's not a Java serialized RustCrateObject"
-        }
-        try {
-            FileInputStream(file).use {
-                val rustCrateObject = ObjectInputStream(it).readObject() as RustCrateObject
-
-                val crateOptions = objects.newInstance(
-                    RustCrateOptions::class.java,
-                    rustCrateObject.name,
-                    rustCrateObject.version
-                )
-
-                crateOptions.fromObject(rustCrateObject)
-
-                return crateOptions
-            }
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to deserialize file $file back to a RustCrateObject. Is it corrupted?", e)
-        }
     }
 }

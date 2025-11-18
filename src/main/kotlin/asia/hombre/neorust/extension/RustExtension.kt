@@ -11,12 +11,14 @@ import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
 import org.gradle.api.Project
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
@@ -58,9 +60,9 @@ abstract class RustExtension @Inject constructor(project: Project) {
      * Directory for all generated artifacts and intermediate files. May also be specified with the `CARGO_TARGET_DIR`
      * environment variable, or the build.target-dir config value. Defaults to target in the root of the workspace.
      */
-    @get:Input
+    @get:InputDirectory
     @get:Optional
-    abstract val targetDirectory: Property<String>
+    abstract val targetDirectory: DirectoryProperty
 
     @get:Input
     @get:Optional
@@ -135,14 +137,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
 
     init {
         manifestPath.convention(project.layout.buildDirectory.file("Cargo.toml"))
+        targetDirectory.convention(project.layout.buildDirectory.dir("target"))
     }
-
-    /*@Internal
-    var implementationName = ""
-    @Internal
-    var buildOnlyName = ""
-    @Internal
-    var devOnlyName = ""*/
 
     @Internal
     internal val rustTargetOptions: RustTargetOptions = objects.newInstance(

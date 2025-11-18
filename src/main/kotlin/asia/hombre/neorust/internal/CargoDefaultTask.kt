@@ -4,6 +4,7 @@ import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.task.CargoClean
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -12,6 +13,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import java.nio.file.Path
@@ -57,9 +59,9 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
      * Directory for all generated artifacts and intermediate files. May also be specified with the `CARGO_TARGET_DIR`
      * environment abstract variable, or the build.target-dir config value. Defaults to target in the root of the workspace.
      */
-    @get:Input
+    @get:OutputDirectory
     @get:Optional
-    abstract val targetDirectory: Property<String>
+    abstract val targetDirectory: DirectoryProperty
 
     @get:Input
     @get:Optional
@@ -150,15 +152,15 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
         }
 
         targetDirectory.apply {
-            if(isPresent && get().isNotBlank())
-                args.addAll(listOf("--target-dir", get()))
+            if(isPresent)
+                args.addAll(listOf("--target-dir", get().asFile.absolutePath))
         }
 
         if(allFeatures.getOrElse(false) && this !is CargoClean)
             args.add("--all-features")
 
         features.apply {
-            if(isPresent && !allFeatures.getOrElse(false) && this !is CargoClean)
+            if(isPresent && !allFeatures.getOrElse(false) && this@CargoDefaultTask !is CargoClean)
                 args.addAll(listOf("--features", get()))
         }
 
@@ -216,14 +218,10 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
         return args
     }
 
-    fun run() {
+    @TaskAction
+    internal open fun cargoTaskAction() {
         cmd.exec {
             commandLine = compileArgs().also { println(it.joinToString(" ")) }
         }
-    }
-
-    @TaskAction
-    internal open fun cargoTaskAction() {
-        run()
     }
 }

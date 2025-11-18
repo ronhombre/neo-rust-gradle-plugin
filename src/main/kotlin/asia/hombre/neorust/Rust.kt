@@ -19,12 +19,16 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.attributes.Category
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
+import readRustCrateFromFile
+import readTomlStringFields
 import setBenchProperties
 import setBuildProperties
 import setDefaultProperties
 import setPublishProperties
 import setTargettedProperties
 import setTestProperties
+import java.io.IOException
+import java.security.MessageDigest
 
 @Suppress("unused")
 class Rust: Plugin<Project> {
@@ -106,7 +110,6 @@ class Rust: Plugin<Project> {
         target.configurations.create("crateElements") {
             isCanBeResolved = false
             isCanBeConsumed = true
-            isVisible = false
             @Suppress("UnstableApiUsage")
             isCanBeDeclared = false
             attributes {
@@ -135,6 +138,8 @@ class Rust: Plugin<Project> {
                 this.ext = extension
                 setDefaultProperties()
                 setTargettedProperties()
+
+                inputs.file(manifestPath)
             }.get()
         }
 
@@ -164,11 +169,12 @@ class Rust: Plugin<Project> {
                 setDefaultProperties()
                 setTargettedProperties()
                 setBuildProperties()
-                this.bin.addAll(target.provider<Iterable<String>> {
+                this.bin.addAll(target.provider {
                     extension.rustBinaryOptions.list.get().map { it.name.get() }.toSet().asIterable()
                 })
 
                 inputs.file(manifestPath)
+                outputs.dir(targetDirectory.get())
             }.get()
         }
 
@@ -208,6 +214,27 @@ class Rust: Plugin<Project> {
             packageConfig.version.convention(project.version.toString())
             packageConfig.description.convention(project.description)
 
+            //List of all resolved crates that are referenced using the Gradle `project(":name")` DSL. Flattened and
+            //no duplicates. Error checked to catch edge cases and to inform the user about them.
+            val gradleRustDependencies = try {
+                resolveCrates
+                    .resolvedOutput
+                    .asFileTree
+                    .files
+                    .filter { it.extension == "rc" }
+                    .map(target.objects::readRustCrateFromFile)
+            } catch (e: IOException) {
+                logger.error("Couldn't read the resolved Rust crates. Do we have the correct file permissions?", e)
+                null
+            } catch (e: RuntimeException) {
+                logger.error("Corrupted resolved Rust crate detected. Please re-run task `resolveRustCrates` or do `clean` first.", e)
+                null
+            } catch (e: Exception) {
+                logger.error("Unknown error encountered.", e)
+                null
+            }
+            val digestBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
             extension.rustBinaryOptions.list.get().forEach { binary ->
                 val lowercaseBinaryName = binary.name.get().lowercase()
                 val buildProfile = binary.buildProfile.get()
@@ -234,7 +261,54 @@ class Rust: Plugin<Project> {
                         this.bin.set(mutableListOf()) //Get off the Global property
                         this.bin.add(binary.name.get())
 
-                        inputs.file(manifestPath)
+                        inputs.dir(binary.path.get().asFile.parentFile.also { it.mkdirs() })
+
+                        //TODO: Switch to xxHash
+                        //Calculate hash
+                        inputs.property("files-hash",
+                            let {
+                                val digest = MessageDigest.getInstance("SHA-256")
+
+                                gradleRustDependencies?.forEach { crate ->
+                                    val crateManifestDir = manifestPath
+                                        .get()
+                                        .asFile
+                                        .toPath()
+                                        .resolveSibling(crate.path.get())
+                                        .normalize()
+
+                                    val libraryPath = crateManifestDir.resolve("Cargo.toml")
+                                        .toFile()
+                                        .readTomlStringFields("lib", listOf("path"))["path"]?:
+                                    throw IllegalArgumentException(
+                                        "Crate ${binary.name.get()} is not a library because the \"path\" value cannot be found."
+                                    )
+
+                                    val libraryRustSourceDir = crateManifestDir
+                                        .resolve(libraryPath)
+                                        .normalize()
+                                        .toFile()
+                                        .parentFile
+
+                                    libraryRustSourceDir
+                                        .walkTopDown()
+                                        .filter { it.isFile && it.extension == "rs" }
+                                        .toSet()
+                                        .forEach {
+                                            it.inputStream().use { input ->
+                                                var bytesRead = input.read(digestBuffer)
+                                                while (bytesRead > 0) {
+                                                    digest.update(digestBuffer, 0, bytesRead)
+                                                    bytesRead = input.read(digestBuffer)
+                                                }
+                                            }
+                                        }
+                                }
+
+                                digest.digest()
+                            }
+                        )
+                        outputs.dir(outputTargetDirectory)
                     }.get()
                 } as CargoBuild
                 tryRegisterTask {
@@ -243,8 +317,8 @@ class Rust: Plugin<Project> {
                         group = "run"
                         description = "Execute binary '$lowercaseBinaryName' using the profile '$lowercaseProfile'"
 
-                        this.targetDirectory.set(extension.targetDirectory)
-                        this.manifestPath.set(extension.manifestPath)
+                        this.targetDirectory.set(cargoBuildTask.outputTargetDirectory)
+                        this.manifestPath.set(cargoBuildTask.manifestPath)
                         this.binaryName.set(lowercaseBinaryName)
                         this.buildProfile.set(
                             if(cargoBuildTask.release.isPresent && cargoBuildTask.release.get())
@@ -254,8 +328,6 @@ class Rust: Plugin<Project> {
                         )
                         this.arguments.set(binary.arguments.get())
                         this.environment.set(binary.environment.get())
-
-                        inputs.file(manifestPath)
                     }.get()
                 }
             }

@@ -17,6 +17,7 @@ import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
+import asia.hombre.neorust.serializable.RustCrateObject
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
 import asia.hombre.neorust.task.CargoPublish
@@ -28,6 +29,8 @@ import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.model.ObjectFactory
 import java.io.File
+import java.io.FileInputStream
+import java.io.ObjectInputStream
 import java.util.*
 
 internal fun CargoDefaultTask.setDefaultProperties() {
@@ -345,8 +348,29 @@ internal fun ResolvedArtifactResult.asRustCrate(objectFactory: ObjectFactory, re
 
         return options
     }
+}
 
-    return null
+internal fun ObjectFactory.readRustCrateFromFile(file: File): RustCrateOptions {
+    assert(file.name.endsWith(".rc")) {
+        "Attempted to read file $file but it's not a Java serialized RustCrateObject"
+    }
+    try {
+        FileInputStream(file).use {
+            val rustCrateObject = ObjectInputStream(it).readObject() as RustCrateObject
+
+            val crateOptions = this.newInstance(
+                RustCrateOptions::class.java,
+                rustCrateObject.name,
+                rustCrateObject.version
+            )
+
+            crateOptions.fromObject(rustCrateObject)
+
+            return crateOptions
+        }
+    } catch (e: Exception) {
+        throw RuntimeException("Failed to deserialize file $file back to a RustCrateObject. Is it corrupted?", e)
+    }
 }
 
 private fun Any.resolveDependencyNotation(objects: ObjectFactory): RustCrateOptions {

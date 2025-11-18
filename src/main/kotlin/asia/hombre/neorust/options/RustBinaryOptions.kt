@@ -1,11 +1,14 @@
 package asia.hombre.neorust.options
 
 import asia.hombre.neorust.option.BuildProfile
+import org.gradle.api.Project
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
@@ -23,7 +26,10 @@ abstract class RustBinaryOptions @Inject constructor() {
     @get:Nested
     internal abstract val list: ListProperty<Binary>
 
-    abstract class Binary {
+    abstract class Binary @Inject constructor() {
+        @get:Inject
+        abstract val project: Project
+
         @get:Input
         abstract val name: Property<String>
 
@@ -46,8 +52,12 @@ abstract class RustBinaryOptions @Inject constructor() {
         @get:Optional
         abstract val environment: MapProperty<String, String>
 
+        @get:InputFile
+        abstract val path: RegularFileProperty
+
         init {
             buildProfile.convention(BuildProfile.DEFAULT)
+            path.convention(project.layout.projectDirectory.dir("src").dir("main").dir("rust").file("main.rs"))
         }
     }
 }

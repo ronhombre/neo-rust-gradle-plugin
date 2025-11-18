@@ -1,5 +1,6 @@
 package asia.hombre.neorust.internal
 
+import asia.hombre.neorust.task.CargoClean
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -60,7 +61,7 @@ abstract class CargoTargettedTask @Inject constructor(): CargoDefaultTask() {
             args.add("--lib")
 
         bin.apply {
-            if(isPresent && get().isNotEmpty()) {
+            if(isPresent && get().isNotEmpty() && this@CargoTargettedTask !is CargoClean) {
                 args.add("--bin")
                 args.addAll(get())
             }
