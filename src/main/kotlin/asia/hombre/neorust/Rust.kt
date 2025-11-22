@@ -161,7 +161,9 @@ class Rust: Plugin<Project> {
         var buildTask = "build" + addIfTest()
         buildTask += addIfConflictingTask(target, buildTask)
         tryRegisterTask {
-            target.tasks.register(buildTask, CargoBuild::class.java) {
+            val task = target.tasks.register(buildTask, CargoBuild::class.java, false)
+
+            task.configure {
                 dependsOn("generateCargoManifest")
                 group = "build"
                 description = "Builds all the binaries using the default profile"
@@ -175,7 +177,9 @@ class Rust: Plugin<Project> {
 
                 inputs.file(manifestPath)
                 outputs.dir(targetDirectory.get())
-            }.get()
+            }
+
+            return@tryRegisterTask task.get()
         }
 
         var publishTask = "publish" + addIfTest()
@@ -243,7 +247,9 @@ class Rust: Plugin<Project> {
                 val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
                 val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
                 val cargoBuildTask = tryRegisterTask {
-                    target.tasks.register(binaryBuildTask, CargoBuild::class.java) {
+                    val task = target.tasks.register(binaryBuildTask, CargoBuild::class.java, buildProfile == BuildProfile.RELEASE)
+
+                    task.configure {
                         dependsOn("generateCargoManifest")
                         group = "build"
                         description = "Build '$lowercaseBinaryName' using the global build profile"
@@ -309,7 +315,9 @@ class Rust: Plugin<Project> {
                             }
                         )
                         outputs.dir(outputTargetDirectory)
-                    }.get()
+                    }
+
+                    return@tryRegisterTask task.get()
                 } as CargoBuild
                 tryRegisterTask {
                     target.tasks.register(runTask, RunBinary::class.java) {
@@ -336,7 +344,9 @@ class Rust: Plugin<Project> {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {
-                    target.tasks.register(buildLibraryTask, CargoBuild::class.java) {
+                    val task = target.tasks.register(buildLibraryTask, CargoBuild::class.java, false)
+
+                    task.configure {
                         dependsOn("generateCargoManifest")
                         group = "build"
                         description = "Builds the library only"
@@ -347,12 +357,16 @@ class Rust: Plugin<Project> {
                         this.lib.set(true)
 
                         inputs.file(manifestPath)
-                    }.get()
+                    }
+
+                    return@tryRegisterTask task.get()
                 }
                 var buildLibraryReleaseTask = "buildLibraryOnlyRelease" + addIfTest()
                 buildLibraryReleaseTask += addIfConflictingTask(target, buildLibraryReleaseTask)
                 tryRegisterTask {
-                    target.tasks.register(buildLibraryReleaseTask, CargoBuild::class.java) {
+                    val task = target.tasks.register(buildLibraryReleaseTask, CargoBuild::class.java, true)
+
+                    task.configure {
                         dependsOn("generateCargoManifest")
                         group = "build"
                         description = "Builds the library only as release"
@@ -364,7 +378,9 @@ class Rust: Plugin<Project> {
                         this.release.set(true)
 
                         inputs.file(manifestPath)
-                    }.get()
+                    }
+
+                    return@tryRegisterTask task.get()
                 }
             }
 

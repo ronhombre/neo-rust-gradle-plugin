@@ -19,7 +19,7 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
+abstract class CargoBuild @Inject constructor(releaseBuild: Boolean): CargoTargettedTask() {
     @get:Input
     @get:Optional
     abstract val workspace: Property<Boolean>
@@ -54,7 +54,7 @@ abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
 
     init {
         outputTargetDirectory.convention(
-            if(release.isPresent && release.get()) {
+            if(releaseBuild) {
                 targetDirectory.dir("release")
             } else {
                 targetDirectory.dir("debug")
@@ -123,7 +123,6 @@ abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
                         messageFormat.get().contains(CargoMessageFormat.json_render_diagnostics))
                         throw IllegalArgumentException("The format '" + format.name + "' conflicts with another format!")
                 }
-                else -> logger.warn("Unexpected `null` value for `messageFormat`!")
             }
         }
 
