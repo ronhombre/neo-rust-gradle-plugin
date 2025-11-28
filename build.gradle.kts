@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "asia.hombre.neorust"
-version = "0.5.3"
+version = "0.5.4"
 description = "Build Rust Crates within Gradle and integrate with other Gradle projects"
 val officialName = "Neo Rust Gradle Plugin"
 
