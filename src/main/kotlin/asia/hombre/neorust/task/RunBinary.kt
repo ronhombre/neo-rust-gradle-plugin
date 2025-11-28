@@ -69,6 +69,9 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
                 commandLine.addAll(arguments.get())
 
                 environment(this@RunBinary.environment.get())
+
+                //Allow writing into std in when the run task is running
+                standardInput = System.`in`
             }
         }
 
