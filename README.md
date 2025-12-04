@@ -1,4 +1,4 @@
-# Neo Rust Gradle Plugin (0.5.4)
+# Neo Rust Gradle Plugin (0.5.5)
 
 ![Gradle Plugin Portal Version](https://img.shields.io/gradle-plugin-portal/v/asia.hombre.neorust?style=for-the-badge&label=neo-rust-gradle-plugin)
 
@@ -51,7 +51,7 @@ because of its complexity), and limited support for `lib` section.
 | No Plan | Avoided implementing due to design or logic reasons.  |
 
 ### Current Status
-As of version 0.5.4, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
+As of version 0.5.5, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
 requiring a Cargo.toml file. Additionally, users can use local Gradle modules as crate dependencies
 
 **Key capabilities:**
@@ -86,7 +86,7 @@ project-root/
 `build.gradle.kts`
 ```kotlin
 plugins {
-    id("asia.hombre.neorust") version "0.5.4"
+    id("asia.hombre.neorust") version "0.5.5"
 }
 ```
 
@@ -101,7 +101,7 @@ import asia.hombre.neorust.task.CargoPublish
 import asia.hombre.neorust.task.CargoTest
 
 plugins {
-    id("asia.hombre.neorust") version "0.5.4"
+    id("asia.hombre.neorust") version "0.5.5"
 }
 
 dependencies {
