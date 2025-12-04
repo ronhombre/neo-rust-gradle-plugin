@@ -65,8 +65,7 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
 
         val execTime = measureTime {
             execOperations.exec {
-                commandLine(folder.resolve(executableFileName))
-                commandLine.addAll(arguments.get())
+                commandLine(folder.resolve(executableFileName), *arguments.get().toTypedArray())
 
                 environment(this@RunBinary.environment.get())
 
