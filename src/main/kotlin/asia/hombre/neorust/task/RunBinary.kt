@@ -74,6 +74,6 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
             }
         }
 
-        println("Executing $executableFileName took $execTime")
+        print("\nExecuting $executableFileName took $execTime")
     }
 }

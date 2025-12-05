@@ -262,6 +262,7 @@ internal fun StringBuilder.writeBooleanField(key: String, value: Boolean, defaul
 
 internal fun StringBuilder.writeCrateField(crate: RustCrateOptions) {
     if(!crate.path.isPresent &&
+        !crate.git.isPresent &&
         !crate.registry.isPresent &&
         !crate.features.isPresent &&
         !crate.defaultFeatures.isPresent &&
@@ -275,6 +276,11 @@ internal fun StringBuilder.writeCrateField(crate: RustCrateOptions) {
 
         if(crate.path.isPresent)
             crateOptions.add("path = \"${crate.path.get()}\"")
+        else if(crate.git.isPresent) {
+            crateOptions.add("git = \"${crate.git.get()}\"")
+            if(crate.rev.isPresent)
+                crateOptions.add("rev = \"${crate.rev.get()}\"")
+        }
 
         if(crate.registry.isPresent && crate.registry.get() != "crates.io")
             crateOptions.add("registry = \"${crate.registry.get()}\"")

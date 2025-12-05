@@ -12,6 +12,8 @@ internal data class RustCrateObject(
     val name: String,
     val version: String,
     val path: String? = null,
+    val git: String? = null,
+    val rev: String? = null,
     val registry: String? = null,
     val features: Set<String> = emptySet(),
     val defaultFeatures: Boolean? = null,
@@ -19,6 +21,6 @@ internal data class RustCrateObject(
 ): Serializable {
     companion object {
         @Suppress("unused")
-        private const val serialVersionUID: Long = 1L
+        private const val serialVersionUID: Long = 2L
     }
 }
