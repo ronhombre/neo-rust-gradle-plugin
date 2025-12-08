@@ -71,7 +71,9 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
 
                 environment(this@RunBinary.environment.get())
 
-                workingDir(this@RunBinary.workingDir.get())
+                if (this@RunBinary.workingDir.isPresent) {
+                    workingDir(this@RunBinary.workingDir.get())
+                }
 
                 //Allow writing into std in when the run task is running
                 standardInput = System.`in`

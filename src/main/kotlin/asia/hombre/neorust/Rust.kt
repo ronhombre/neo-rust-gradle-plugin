@@ -334,7 +334,9 @@ class Rust: Plugin<Project> {
                             else
                                 "debug"
                         )
-                        this.workingDir.set(binary.workingDir.getOrElse("."))
+                        if (binary.workingDir.isPresent) {
+                            this.workingDir.set(binary.workingDir.get())
+                        }
                         this.arguments.set(binary.arguments.get())
                         this.environment.set(binary.environment.get())
                     }.get()
