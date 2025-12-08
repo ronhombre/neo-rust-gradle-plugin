@@ -202,7 +202,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         if(dependencies.isNotEmpty()) {
             content.writeTable("dependencies") {
                 dependencies.forEach { rustCrate ->
-                    writeCrateField(rustCrate)
+                    writeCrateField(logger, rustCrate)
                 }
             }
         }
@@ -210,7 +210,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         if(devDependencies.isNotEmpty()) {
             content.writeTable("dev-dependencies") {
                 devDependencies.forEach { rustCrate ->
-                    writeCrateField(rustCrate)
+                    writeCrateField(logger, rustCrate)
                 }
             }
         }
@@ -218,7 +218,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         if(buildDependencies.isNotEmpty()) {
             content.writeTable("build-dependencies") {
                 buildDependencies.forEach { rustCrate ->
-                    writeCrateField(rustCrate)
+                    writeCrateField(logger, rustCrate)
                 }
             }
         }

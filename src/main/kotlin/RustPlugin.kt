@@ -27,6 +27,7 @@ import org.gradle.api.IllegalDependencyNotation
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
 import java.io.File
 import java.io.FileInputStream
@@ -260,7 +261,7 @@ internal fun StringBuilder.writeBooleanField(key: String, value: Boolean, defaul
     }
 }
 
-internal fun StringBuilder.writeCrateField(crate: RustCrateOptions) {
+internal fun StringBuilder.writeCrateField(logger: Logger, crate: RustCrateOptions) {
     if(!crate.path.isPresent &&
         !crate.git.isPresent &&
         !crate.registry.isPresent &&
@@ -278,8 +279,15 @@ internal fun StringBuilder.writeCrateField(crate: RustCrateOptions) {
             crateOptions.add("path = \"${crate.path.get()}\"")
         else if(crate.git.isPresent) {
             crateOptions.add("git = \"${crate.git.get()}\"")
-            if(crate.rev.isPresent)
+
+            //We prioritize `rev` because `rev` and `branch` conflicts in Cargo, and `rev` points to the exact commit.
+            if(crate.rev.isPresent) {
                 crateOptions.add("rev = \"${crate.rev.get()}\"")
+
+                if(crate.branch.isPresent)
+                    logger.warn("Crate `rev` and `branch` are both set but they conflict in Cargo. Prioritizing `rev` and ignoring `branch`.")
+            } else if(crate.branch.isPresent)
+                crateOptions.add("branch = \"${crate.branch.get()}\"")
         }
 
         if(crate.registry.isPresent && crate.registry.get() != "crates.io")

@@ -26,6 +26,9 @@ abstract class RustCrateOptions @Inject constructor(@get:Input internal val name
     abstract val rev: Property<String>
     @get:Input
     @get:Optional
+    abstract val branch: Property<String>
+    @get:Input
+    @get:Optional
     abstract val registry: Property<String>
     @get:Input
     @get:Optional
@@ -44,6 +47,7 @@ abstract class RustCrateOptions @Inject constructor(@get:Input internal val name
             if(path.isPresent) path.get() else null,
             if(git.isPresent) git.get() else null,
             if(rev.isPresent) rev.get() else null,
+            if(branch.isPresent) branch.get() else null,
             if(registry.isPresent) registry.get() else null,
             features.get().toSet(),
             if(defaultFeatures.isPresent) defaultFeatures.get() else null,
@@ -55,6 +59,7 @@ abstract class RustCrateOptions @Inject constructor(@get:Input internal val name
         path.set(rustCrateObject.path)
         git.set(rustCrateObject.git)
         rev.set(rustCrateObject.rev)
+        branch.set(rustCrateObject.branch)
         registry.set(rustCrateObject.registry)
         features.set(rustCrateObject.features)
         defaultFeatures.set(rustCrateObject.defaultFeatures)
@@ -68,6 +73,7 @@ abstract class RustCrateOptions @Inject constructor(@get:Input internal val name
         if(!path.isPresent) path.set(other.path)
         if(!git.isPresent) git.set(other.git)
         if(!rev.isPresent) rev.set(other.rev)
+        if(!branch.isPresent) branch.set(other.branch)
         if(!registry.isPresent) registry.set(other.registry)
         if(features.get().isEmpty()) features.set(other.features)
         if(!defaultFeatures.isPresent) defaultFeatures.set(other.defaultFeatures)
