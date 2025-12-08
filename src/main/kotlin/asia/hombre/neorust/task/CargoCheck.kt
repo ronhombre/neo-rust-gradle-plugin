@@ -20,18 +20,15 @@ abstract class CargoCheck @Inject constructor(): DefaultTask() {
 
             execResult.waitFor()
 
-            if (execResult.exitValue() != 0) {
-                val error = "Command failed with exit value: ${execResult.exitValue()}"
-                throw RuntimeException(error)
-            }
+            if (execResult.exitValue() != 0)
+                throw RuntimeException("Command failed with exit value: ${execResult.exitValue()}")
 
             checkCache.get().asFile.apply {
                 parentFile.mkdirs()
                 createNewFile()
             }
         } catch (_: IOException) {
-            val error = "Cannot find cargo. Install it or set the path environment variable for your system"
-            throw RuntimeException(error)
+            throw RuntimeException("Cannot find cargo. Install it or set the path environment variable for your system.")
         }
     }
 }
