@@ -50,6 +50,10 @@ abstract class RustBinaryOptions @Inject constructor() {
 
         @get:Input
         @get:Optional
+        abstract val workingDir: Property<String>
+
+        @get:Input
+        @get:Optional
         abstract val environment: MapProperty<String, String>
 
         @get:InputFile
