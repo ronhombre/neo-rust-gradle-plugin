@@ -77,10 +77,10 @@ abstract class ResolveCrates @Inject constructor(): DefaultTask() {
     }
 
     private fun writeToFile(directory: File, artifact: ResolvedArtifactResult) {
-        artifact.asRustCrate(objects, referenceManifestPath.get().asFile)?.let { crate ->
-            FileOutputStream(directory.resolve("${crate.name.hash()}.rc")).use { outputStream ->
-                ObjectOutputStream(outputStream).writeObject(crate.toObject())
-            }
+        val crate = artifact.asRustCrate(objects, referenceManifestPath.get().asFile)
+
+        FileOutputStream(directory.resolve("${crate.name.hash()}.rc")).use { outputStream ->
+            ObjectOutputStream(outputStream).writeObject(crate.toObject())
         }
     }
 

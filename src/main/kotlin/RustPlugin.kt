@@ -329,7 +329,7 @@ internal fun File.readTomlStringFields(objectKey: String, keys: List<String>): M
         val iterator = searchSpace.iterator()
         while(iterator.hasNext()) {
             val key = iterator.next()
-            if(line.length >= key.length && line.substring(0, key.length) == key) {
+            if(line.length >= key.length && line.take(key.length) == key) {
                 if(line.substringAfter(key, "!").substringBefore("=", "!").isNotBlank()) continue
                 val fieldValue = line.substringAfter("=").trim()
                 if(!fieldValue.startsWith("\"") || !fieldValue.endsWith("\"")) continue
@@ -342,7 +342,7 @@ internal fun File.readTomlStringFields(objectKey: String, keys: List<String>): M
     return result
 }
 
-internal fun ResolvedArtifactResult.asRustCrate(objectFactory: ObjectFactory, referenceManifestFile: File): RustCrateOptions? {
+internal fun ResolvedArtifactResult.asRustCrate(objectFactory: ObjectFactory, referenceManifestFile: File): RustCrateOptions {
     this.file.readTomlStringFields("package", listOf("name", "version")).apply {
         val name = get("name")
         val version = get("version")
@@ -350,7 +350,7 @@ internal fun ResolvedArtifactResult.asRustCrate(objectFactory: ObjectFactory, re
             throw IllegalArgumentException(
                 "Cannot resolve this Rust crate because the name or version couldn't be found. Name: $name | Version: $version"
             )
-        val options = objectFactory.newInstance<RustCrateOptions>(RustCrateOptions::class.java, name, version)
+        val options = objectFactory.newInstance(RustCrateOptions::class.java, name, version)
 
         options.path.set(
             this@asRustCrate
