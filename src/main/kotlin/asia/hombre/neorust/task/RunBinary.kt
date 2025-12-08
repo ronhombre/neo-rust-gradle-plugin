@@ -37,6 +37,8 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
     @get:Input
     abstract val buildProfile: Property<String>
     @get:Input
+    abstract val workingDir: Property<String>
+    @get:Input
     abstract val arguments: ListProperty<String>
     @get:Input
     abstract val environment: MapProperty<String, String>
@@ -68,6 +70,8 @@ abstract class RunBinary @Inject constructor(): DefaultTask() {
                 commandLine(folder.resolve(executableFileName), *arguments.get().toTypedArray())
 
                 environment(this@RunBinary.environment.get())
+
+                workingDir(this@RunBinary.workingDir.get())
 
                 //Allow writing into std in when the run task is running
                 standardInput = System.`in`
