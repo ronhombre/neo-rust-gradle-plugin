@@ -64,7 +64,7 @@ publishing {
 
 dokka {
     pluginsConfiguration.html {
-        footerMessage = "Copyright (c) 2025 Ron Lauren Hombre"
+        footerMessage = "Copyright (c) 2025 Ron Lauren Hombre (and the neo-rust-gradle-plugin contributors)"
     }
 
     dokkaPublications.html {
