@@ -383,7 +383,8 @@ internal fun ObjectFactory.readRustCrateFromFile(file: File): RustCrateOptions {
             return crateOptions
         }
     } catch (e: Exception) {
-        throw RuntimeException("Failed to deserialize file $file back to a RustCrateObject. Is it corrupted?", e)
+        file.delete()
+        throw RuntimeException("Failed to deserialize file $file back to a RustCrateObject. Is it corrupted? Please run the task again", e)
     }
 }
 
