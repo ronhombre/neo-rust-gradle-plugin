@@ -20,6 +20,7 @@ package asia.hombre.neorust.extension
 
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.RustBenchOptions
+import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
@@ -52,7 +53,8 @@ import javax.inject.Inject
  */
 @Suppress("unused")
 abstract class RustExtension @Inject constructor(project: Project) {
-    private val objects: ObjectFactory = project.objects
+    @Internal
+    internal val objects: ObjectFactory = project.objects
 
     /**
      * The package to publish. See cargo-pkgid(1) for the SPEC format.
@@ -201,4 +203,7 @@ abstract class RustExtension @Inject constructor(project: Project) {
     internal val rustLibraryOptions: RustLibraryOptions = objects.newInstance(
         RustLibraryOptions::class.java
     )
+
+    @Internal
+    internal val rustBinariesOptions: MutableList<RustBinariesOptions> = mutableListOf()
 }

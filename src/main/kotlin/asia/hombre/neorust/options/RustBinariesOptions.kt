@@ -21,13 +21,16 @@ package asia.hombre.neorust.options
 import javax.inject.Inject
 
 /**
- * Customizable configuration for the Rust library target
+ * Customizable configuration for any Rust binary target
  *
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class RustLibraryOptions @Inject constructor(): RustTargetOptions() {
+abstract class RustBinariesOptions @Inject constructor(): RustTargetOptions() {
     init {
+        //Binaries are always the "bin" crate type
+        //https://doc.rust-lang.org/cargo/reference/cargo-targets.html#:~:text=Binaries%2C%20tests%2C%20and%20benchmarks%20are%20always%20the%20%E2%80%9Cbin%E2%80%9D%20crate%20type.
+        this.crateType.finalizeValue()
         path.convention(
             project
                 .layout
@@ -35,7 +38,7 @@ abstract class RustLibraryOptions @Inject constructor(): RustTargetOptions() {
                 .dir("src")
                 .dir("main")
                 .dir("rust")
-                .file("lib.rs")
+                .file("main.rs")
         )
     }
 }

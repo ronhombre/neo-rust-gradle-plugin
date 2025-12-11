@@ -18,6 +18,7 @@
 
 package asia.hombre.neorust.options
 
+import org.gradle.api.Project
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -34,6 +35,9 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class RustTargetOptions @Inject constructor() {
+    @get:Inject
+    abstract val project: Project
+
     @get:Input
     @get:Optional
     abstract val name: Property<String>
@@ -73,4 +77,43 @@ abstract class RustTargetOptions @Inject constructor() {
 
     @get:Internal
     var isEnabled = false
+
+    /**
+     * Attempts to resolve a `.rs` file as the `path` for this Cargo target.
+     *
+     * The file will be searched in directory `src/main/rust/` of this Gradle project.
+     *
+     * So if you do `resolve("example.rs")`, it will be internally resolved as `src/main/rust/example.rs`. This makes it
+     * extremely easy to define multiple targets.
+     *
+     * It is also possible to do `resolve("bin", "client.rs")`, and this will be resolved as
+     * `src/main/rust/bin/client.rs`.
+     *
+     * @param paths A list of arguments defining the location of the main file for this binary Cargo target.
+     * @return `true` if the file exists in the path and has been applied, `false` otherwise.
+     */
+    fun resolve(vararg paths: String): Boolean {
+        var currentDirectory = project
+            .layout
+            .projectDirectory
+            .dir("src")
+            .dir("main")
+            .dir("rust")
+
+        paths.forEachIndexed { index, path ->
+            if(index != paths.lastIndex) currentDirectory = currentDirectory.dir(path)
+        }
+
+        val finalFilePath = currentDirectory.file(paths.last())
+
+        if(!finalFilePath.asFile.exists()) {
+            project.logger.error("${finalFilePath.asFile.path} could not be resolved and has not been applied. It does not exist or we don't have permission to read it.")
+
+            return false
+        }
+
+        this.path.set(finalFilePath)
+
+        return true
+    }
 }
