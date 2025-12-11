@@ -35,12 +35,9 @@ import javax.inject.Inject
 abstract class RustManifestOptions @Inject constructor(objectFactory: ObjectFactory) {
     @get:Nested
     internal abstract val packageConfig: Property<Package>
-    @get:Nested
-    internal abstract val libConfig: Property<Library>
 
     init {
         packageConfig.set(objectFactory.newInstance(Package::class.java))
-        libConfig.set(objectFactory.newInstance(Library::class.java))
     }
 
     abstract class Package {
@@ -122,19 +119,5 @@ abstract class RustManifestOptions @Inject constructor(objectFactory: ObjectFact
         @get:Input
         @get:Optional
         abstract val autoBenches: Property<Boolean>
-    }
-
-    abstract class Library {
-        @get:Input
-        @get:Optional
-        abstract val crateType: ListProperty<String>
-        @get:Input
-        @get:Optional
-        abstract val path: Property<String>
-
-        init {
-            crateType.convention(mutableListOf())
-            path.convention("src/main/rust/lib.rs")
-        }
     }
 }

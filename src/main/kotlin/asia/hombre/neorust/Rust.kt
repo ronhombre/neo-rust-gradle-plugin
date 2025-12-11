@@ -115,6 +115,7 @@ class Rust: Plugin<Project> {
                 rustProfileOptions.set(extension.rustProfileOptions)
                 rustBinaryOptions.set(extension.rustBinaryOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
+                rustLibraryOptions.set(extension.rustLibraryOptions)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)
@@ -359,7 +360,7 @@ class Rust: Plugin<Project> {
                 }
             }
 
-            if(extension.rustManifestOptions.libConfig.get().crateType.isPresent) {
+            if(extension.rustLibraryOptions.isEnabled) {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {

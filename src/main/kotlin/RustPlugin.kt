@@ -26,14 +26,14 @@ import asia.hombre.neorust.options.RustBenchOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBinaryOptions.Binary
 import asia.hombre.neorust.options.RustBuildOptions
+import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
+import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
-import asia.hombre.neorust.options.RustManifestOptions.Library
 import asia.hombre.neorust.options.RustManifestOptions.Package
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
-import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
 import asia.hombre.neorust.serializable.RustCrateObject
 import asia.hombre.neorust.task.CargoBench
@@ -45,6 +45,7 @@ import org.gradle.api.IllegalDependencyNotation
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.api.file.RegularFile
 import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
 import java.io.File
@@ -76,16 +77,16 @@ internal fun CargoDefaultTask.setDefaultProperties() {
 }
 
 internal fun CargoTargettedTask.setTargettedProperties() {
-    lib.convention(ext.rustTargetOptions.lib)
-    bin.set(ext.rustTargetOptions.bin)
-    bins.convention(ext.rustTargetOptions.bins)
-    example.set(ext.rustTargetOptions.example)
-    examples.convention(ext.rustTargetOptions.examples)
-    test.set(ext.rustTargetOptions.test)
-    tests.convention(ext.rustTargetOptions.tests)
-    bench.set(ext.rustTargetOptions.bench)
-    benches.convention(ext.rustTargetOptions.benches)
-    allTargets.convention(ext.rustTargetOptions.allTargets)
+    lib.convention(ext.rustBuildTargetOptions.lib)
+    bin.set(ext.rustBuildTargetOptions.bin)
+    bins.convention(ext.rustBuildTargetOptions.bins)
+    example.set(ext.rustBuildTargetOptions.example)
+    examples.convention(ext.rustBuildTargetOptions.examples)
+    test.set(ext.rustBuildTargetOptions.test)
+    tests.convention(ext.rustBuildTargetOptions.tests)
+    bench.set(ext.rustBuildTargetOptions.bench)
+    benches.convention(ext.rustBuildTargetOptions.benches)
+    allTargets.convention(ext.rustBuildTargetOptions.allTargets)
 }
 
 internal fun CargoBench.setBenchProperties() {
@@ -179,8 +180,8 @@ fun RustExtension.features(rustFeaturesOptions: Action<RustFeaturesOptions>) {
  * Define Global build targets that apply to all build, bench, and test tasks
  */
 @Suppress("unused")
-fun RustExtension.targets(rustTargetOptions: Action<RustTargetOptions>) {
-    rustTargetOptions.execute(this.rustTargetOptions)
+fun RustExtension.targets(rustBuildTargetOptions: Action<RustBuildTargetOptions>) {
+    rustBuildTargetOptions.execute(this.rustBuildTargetOptions)
 }
 
 /**
@@ -203,8 +204,12 @@ fun RustExtension.profiles(rustProfileOptions: Action<RustProfileOptions>) {
  * Configure this project as a library Crate
  */
 @Suppress("unused")
-fun RustManifestOptions.lib(libConfig: Action<Library>) {
-    libConfig.execute(this.libConfig.get())
+fun RustExtension.library(libraryConfig: Action<RustLibraryOptions>) {
+    if(this.rustLibraryOptions.isEnabled) {
+        throw IllegalArgumentException("`library {}` should only be configured once!")
+    }
+    libraryConfig.execute(this.rustLibraryOptions)
+    this.rustLibraryOptions.isEnabled = true //Enable it
 }
 
 /**
@@ -273,7 +278,7 @@ internal fun StringBuilder.writeArrayField(key: String, values: List<String>, fo
     }
 }
 
-internal fun StringBuilder.writeBooleanField(key: String, value: Boolean, defaultValue: Boolean = true) {
+internal fun StringBuilder.writeBooleanField(key: String, value: Boolean?, defaultValue: Boolean? = null) {
     if (value != defaultValue) {
         append("$key = $value\n")
     }
@@ -323,6 +328,11 @@ internal fun StringBuilder.writeCrateField(logger: Logger, crate: RustCrateOptio
         append("${crate.name} = { ${crateOptions.joinToString(", ")} }\n")
     }
 }
+
+internal fun RegularFile.relativeToManifest(manifest: File): String =
+    this.asFile
+        .toRelativeString(manifest.parentFile)
+        .replace("\\", "/")
 
 /**
  * Tries to read a list of TOML fields. Returns nothing if it doesn't exist or is not a String.

@@ -22,11 +22,12 @@ import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.RustBenchOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
+import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
+import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
-import asia.hombre.neorust.options.RustTargetOptions
 import asia.hombre.neorust.options.RustTestOptions
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
@@ -159,8 +160,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
     }
 
     @Internal
-    internal val rustTargetOptions: RustTargetOptions = objects.newInstance(
-        RustTargetOptions::class.java
+    internal val rustBuildTargetOptions: RustBuildTargetOptions = objects.newInstance(
+        RustBuildTargetOptions::class.java
     )
     @Internal
     internal val rustManifestOptions: RustManifestOptions = objects.newInstance(
@@ -193,5 +194,11 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @Internal
     internal val rustProfileOptions: RustProfileOptions = objects.newInstance(
         RustProfileOptions::class.java
+    )
+
+    //Cargo Targets
+    @Internal
+    internal val rustLibraryOptions: RustLibraryOptions = objects.newInstance(
+        RustLibraryOptions::class.java
     )
 }

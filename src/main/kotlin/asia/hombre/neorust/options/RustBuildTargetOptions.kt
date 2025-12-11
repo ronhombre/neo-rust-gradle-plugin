@@ -18,59 +18,56 @@
 
 package asia.hombre.neorust.options
 
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Customizable configuration for "lib", "bin", "bench", "test", and "example" Cargo targets.
+ * Global Cargo build target options. This is applied everywhere by default.
  *
- * @since 0.6.0
+ * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-abstract class RustTargetOptions @Inject constructor() {
+abstract class RustBuildTargetOptions @Inject constructor() {
     @get:Input
     @get:Optional
-    abstract val name: Property<String>
-
-    @get:InputFile
-    abstract val path: RegularFileProperty
+    abstract val lib: Property<Boolean>
 
     @get:Input
     @get:Optional
-    abstract val test: Property<Boolean>
+    abstract val bin: ListProperty<String>
 
     @get:Input
     @get:Optional
-    abstract val doctest: Property<Boolean>
+    abstract val bins: Property<Boolean>
 
     @get:Input
     @get:Optional
-    abstract val bench: Property<Boolean>
+    abstract val example: ListProperty<String>
 
     @get:Input
     @get:Optional
-    abstract val doc: Property<Boolean>
+    abstract val examples: Property<Boolean>
 
     @get:Input
     @get:Optional
-    abstract val procMacro: Property<Boolean>
+    abstract val test: ListProperty<String>
 
     @get:Input
     @get:Optional
-    abstract val harness: Property<Boolean>
+    abstract val tests: Property<Boolean>
 
     @get:Input
-    abstract val crateType: ListProperty<String>
+    @get:Optional
+    abstract val bench: ListProperty<String>
 
     @get:Input
-    abstract val requiredFeatures: ListProperty<String>
+    @get:Optional
+    abstract val benches: Property<Boolean>
 
-    @get:Internal
-    var isEnabled = false
+    @get:Input
+    @get:Optional
+    abstract val allTargets: Property<Boolean>
 }
