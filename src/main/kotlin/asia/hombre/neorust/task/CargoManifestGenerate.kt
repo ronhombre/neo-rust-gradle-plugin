@@ -19,7 +19,7 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.CrateLibrary
-import asia.hombre.neorust.options.RustBinaryOptions
+import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustLibraryOptions
@@ -29,6 +29,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -63,12 +64,12 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val rustProfileOptions: Property<RustProfileOptions>
     @get:Nested
     internal abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
-    @get:Nested
-    internal abstract val rustBinaryOptions: Property<RustBinaryOptions>
 
     //Cargo Targets
     @get:Nested
     internal abstract val rustLibraryOptions: Property<RustLibraryOptions>
+    @get:Nested
+    internal abstract val rustBinariesOptions: ListProperty<RustBinariesOptions>
 
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -263,24 +264,22 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             writeArrayField("required-features", rustLibraryOptions.requiredFeatures.get())
         }
 
-        val previousBinaries = mutableListOf<String>()
+        val rustBinariesOptions = rustBinariesOptions.get()
 
-        rustBinaryOptions.get().list.get().forEach { binary ->
-            if(previousBinaries.contains(binary.name.get())) return@forEach
+        rustBinariesOptions.forEach { binary ->
             content.writeTable("[bin]") {
-                writeField("name", binary.name.get())
-                if(binary.doc.isPresent)
-                    writeBooleanField("doc", binary.doc.get())
-                if(binary.requiredFeatures.isPresent && binary.requiredFeatures.get().isNotEmpty())
-                    writeArrayField("required-features", binary.requiredFeatures.get())
-                writeField("path", binary
-                    .path.get()
-                    .asFile
-                    .toRelativeString(cargoToml.parentFile)
-                    .replace("\\", "/")
-                )
+                writeField("name", binary.name.orNull)
+                writeField("path", binary.path.get().relativeToManifest(cargoToml))
+                writeBooleanField("test", binary.test.orNull)
+                writeBooleanField("doctest", binary.doctest.orNull)
+                writeBooleanField("bench", binary.bench.orNull)
+                writeBooleanField("doc", binary.doc.orNull)
+                writeBooleanField("procMacro", binary.procMacro.orNull)
+                writeBooleanField("harness", binary.harness.orNull)
+                //The user can't modify this, so we ignore it
+                //writeArrayField("crate-type", binary.crateType.get())
+                writeArrayField("required-features", binary.requiredFeatures.get())
             }
-            previousBinaries.add(binary.name.get())
         }
 
         //TODO: Resolve custom registries

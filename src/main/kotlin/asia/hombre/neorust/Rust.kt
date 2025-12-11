@@ -113,9 +113,9 @@ class Rust: Plugin<Project> {
                 group = "build"
                 rustManifestOptions.set(extension.rustManifestOptions)
                 rustProfileOptions.set(extension.rustProfileOptions)
-                rustBinaryOptions.set(extension.rustBinaryOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 rustLibraryOptions.set(extension.rustLibraryOptions)
+                rustBinariesOptions.set(extension.rustBinariesOptions)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)

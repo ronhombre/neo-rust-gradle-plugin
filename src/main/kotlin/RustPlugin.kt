@@ -23,6 +23,7 @@ import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.internal.CargoTargettedTask
 import asia.hombre.neorust.options.RustBenchOptions
+import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBinaryOptions.Binary
 import asia.hombre.neorust.options.RustBuildOptions
@@ -161,14 +162,6 @@ fun RustExtension.testing(rustTestOptions: Action<RustTestOptions>) {
 }
 
 /**
- * Register binaries
- */
-@Suppress("unused")
-fun RustExtension.binaries(rustBinaryOptions: Action<RustBinaryOptions>) {
-    rustBinaryOptions.execute(this.rustBinaryOptions)
-}
-
-/**
  * Set Cargo features
  */
 @Suppress("unused")
@@ -210,6 +203,23 @@ fun RustExtension.library(libraryConfig: Action<RustLibraryOptions>) {
     }
     libraryConfig.execute(this.rustLibraryOptions)
     this.rustLibraryOptions.isEnabled = true //Enable it
+}
+
+/**
+ * Configure a new binary Cargo target
+ */
+@Suppress("unused")
+fun RustExtension.binary(binaryConfig: Action<RustBinariesOptions>) {
+    val binary = objects.newInstance(RustBinariesOptions::class.java)
+
+    binaryConfig.execute(binary)
+
+    if(this.rustBinariesOptions.any { it.name.orNull == binary.name.orNull }) {
+        throw IllegalArgumentException("`binary {}` parameter `name` must be unique! ${binary.name.orNull} has already been declared.")
+    }
+
+    binary.isEnabled = true
+    this.rustBinariesOptions.add(binary)
 }
 
 /**
