@@ -18,27 +18,19 @@
 
 package asia.hombre.neorust.options
 
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Optional
+import org.gradle.api.Project
 import javax.inject.Inject
 
 /**
- * Global Cargo options when running a benchmark
+ * Customizable configuration for the Rust library target
  *
- * @since 0.2.0
+ * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class RustBenchOptions @Inject constructor(): RustBuildTargetOptions() {
-    @get:Input
-    @get:Optional
-    abstract val noRun: Property<Boolean>
-
-    @get:Input
-    @get:Optional
-    abstract val noCapture: Property<Boolean>
-
-    @get:Input
-    @get:Optional
-    abstract val noFailFast: Property<Boolean>
+abstract class RustLibraryOptions @Inject constructor(): RustTargetOptions() {
+    @get:Inject
+    abstract val project: Project
+    init {
+        path.convention(project.layout.projectDirectory.dir("src").dir("main").dir("rust").file("lib.rs"))
+    }
 }

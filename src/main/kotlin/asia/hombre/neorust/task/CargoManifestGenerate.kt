@@ -22,6 +22,7 @@ import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
+import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import org.gradle.api.DefaultTask
@@ -36,6 +37,7 @@ import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import readRustCrateFromFile
+import relativeToManifest
 import writeArrayField
 import writeBooleanField
 import writeCrateField
@@ -63,6 +65,11 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
     @get:Nested
     internal abstract val rustBinaryOptions: Property<RustBinaryOptions>
+
+    //Cargo Targets
+    @get:Nested
+    internal abstract val rustLibraryOptions: Property<RustLibraryOptions>
+
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
     @get:InputDirectory
@@ -241,11 +248,19 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             }
         }
 
-        val libOptions = manifestOptions.libConfig.get()
+        val rustLibraryOptions = rustLibraryOptions.get()
 
-        if(libOptions.crateType.isPresent && libOptions.crateType.get().isNotEmpty()) content.writeTable("lib") {
-            writeField("path", "../${libOptions.path.get()}")
-            writeArrayField("crate-type", libOptions.crateType.get())
+        if(rustLibraryOptions.isEnabled) content.writeTable("lib") {
+            writeField("path", rustLibraryOptions.path.get().relativeToManifest(cargoToml))
+            writeBooleanField("test", rustLibraryOptions.test.orNull)
+            writeBooleanField("doctest", rustLibraryOptions.doctest.orNull)
+            writeBooleanField("bench", rustLibraryOptions.bench.orNull)
+            writeBooleanField("doc", rustLibraryOptions.doc.orNull)
+            writeBooleanField("procMacro", rustLibraryOptions.procMacro.orNull)
+            writeBooleanField("harness", rustLibraryOptions.harness.orNull)
+            writeArrayField("crate-type", rustLibraryOptions.crateType.get())
+            //This has no effect on [lib], but we let the user make that mistake
+            writeArrayField("required-features", rustLibraryOptions.requiredFeatures.get())
         }
 
         val previousBinaries = mutableListOf<String>()
