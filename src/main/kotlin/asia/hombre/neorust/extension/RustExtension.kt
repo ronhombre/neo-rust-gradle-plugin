@@ -24,6 +24,7 @@ import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
+import asia.hombre.neorust.options.RustExamplesOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
@@ -203,7 +204,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
     internal val rustLibraryOptions: RustLibraryOptions = objects.newInstance(
         RustLibraryOptions::class.java
     )
-
     @Internal
     internal val rustBinariesOptions: MutableList<RustBinariesOptions> = mutableListOf()
+    @Internal
+    internal val rustExamplesOptions: MutableList<RustExamplesOptions> = mutableListOf()
 }
