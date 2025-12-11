@@ -21,6 +21,7 @@ package asia.hombre.neorust.task
 import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustCrateOptions
+import asia.hombre.neorust.options.RustExamplesOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
@@ -70,6 +71,8 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val rustLibraryOptions: Property<RustLibraryOptions>
     @get:Nested
     internal abstract val rustBinariesOptions: ListProperty<RustBinariesOptions>
+    @get:Nested
+    internal abstract val rustExamplesOptions: ListProperty<RustExamplesOptions>
 
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -280,6 +283,24 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
                 //The user can't modify this, so we ignore it
                 //writeArrayField("crate-type", binary.crateType.get())
                 writeArrayField("required-features", binary.requiredFeatures.get())
+            }
+        }
+
+        val rustExamplesOptions = rustExamplesOptions.get()
+
+        rustExamplesOptions.forEach { example ->
+            content.writeTable("[example]") {
+                writeField("name", example.name.orNull)
+                writeField("path", example.path.get().relativeToManifest(cargoToml))
+                writeBooleanField("test", example.test.orNull)
+                writeBooleanField("doctest", example.doctest.orNull)
+                writeBooleanField("bench", example.bench.orNull)
+                writeBooleanField("doc", example.doc.orNull)
+                writeBooleanField("procMacro", example.procMacro.orNull)
+                writeBooleanField("harness", example.harness.orNull)
+                //The user can't modify this, so we ignore it
+                //writeArrayField("crate-type", example.crateType.get())
+                writeArrayField("required-features", example.requiredFeatures.get())
             }
         }
 

@@ -29,6 +29,7 @@ import asia.hombre.neorust.options.RustBinaryOptions.Binary
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustCrateOptions
+import asia.hombre.neorust.options.RustExamplesOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
@@ -221,6 +222,24 @@ fun RustExtension.binary(binaryConfig: Action<RustBinariesOptions>) {
     binary.isEnabled = true
     this.rustBinariesOptions.add(binary)
 }
+
+/**
+ * Configure a new example Cargo target
+ */
+@Suppress("unused")
+fun RustExtension.example(exampleConfig: Action<RustExamplesOptions>) {
+    val example = objects.newInstance(RustExamplesOptions::class.java)
+
+    exampleConfig.execute(example)
+
+    if(this.rustExamplesOptions.any { it.name.orNull == example.name.orNull }) {
+        throw IllegalArgumentException("`example {}` parameter `name` must be unique! ${example.name.orNull} has already been declared.")
+    }
+
+    example.isEnabled = true
+    this.rustExamplesOptions.add(example)
+}
+
 
 /**
  * Register a binary target to be built and configure it for custom builds

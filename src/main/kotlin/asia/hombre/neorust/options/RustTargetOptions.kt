@@ -92,7 +92,7 @@ abstract class RustTargetOptions @Inject constructor() {
      * @param paths A list of arguments defining the location of the main file for this binary Cargo target.
      * @return `true` if the file exists in the path and has been applied, `false` otherwise.
      */
-    fun resolve(vararg paths: String): Boolean {
+    open fun resolve(vararg paths: String): Boolean {
         var currentDirectory = project
             .layout
             .projectDirectory
