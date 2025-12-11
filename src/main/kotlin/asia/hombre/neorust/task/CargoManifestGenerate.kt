@@ -251,6 +251,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         val rustLibraryOptions = rustLibraryOptions.get()
 
         if(rustLibraryOptions.isEnabled) content.writeTable("lib") {
+            writeField("name", rustLibraryOptions.name.orNull)
             writeField("path", rustLibraryOptions.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", rustLibraryOptions.test.orNull)
             writeBooleanField("doctest", rustLibraryOptions.doctest.orNull)
