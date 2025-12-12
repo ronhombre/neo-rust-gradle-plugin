@@ -19,6 +19,7 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.CrateLibrary
+import asia.hombre.neorust.options.RustBenchmarksOptions
 import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustExamplesOptions
@@ -76,6 +77,8 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val rustExamplesOptions: ListProperty<RustExamplesOptions>
     @get:Nested
     internal abstract val rustTestsOptions: ListProperty<RustTestsOptions>
+    @get:Nested
+    internal abstract val rustBenchmarksOptions: ListProperty<RustBenchmarksOptions>
 
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -322,6 +325,24 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
                 //The user can't modify this, so we ignore it
                 //writeArrayField("crate-type", example.crateType.get())
                 writeArrayField("required-features", test.requiredFeatures.get())
+            }
+        }
+
+        val rustBenchOptions = rustBenchmarksOptions.get()
+
+        rustBenchOptions.forEach { bench ->
+            content.writeTable("[bench]") {
+                writeField("name", bench.name.orNull)
+                writeField("path", bench.path.get().relativeToManifest(cargoToml))
+                writeBooleanField("test", bench.test.orNull)
+                writeBooleanField("doctest", bench.doctest.orNull)
+                writeBooleanField("bench", bench.bench.orNull)
+                writeBooleanField("doc", bench.doc.orNull)
+                writeBooleanField("procMacro", bench.procMacro.orNull)
+                writeBooleanField("harness", bench.harness.orNull)
+                //The user can't modify this, so we ignore it
+                //writeArrayField("crate-type", example.crateType.get())
+                writeArrayField("required-features", bench.requiredFeatures.get())
             }
         }
 

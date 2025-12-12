@@ -23,6 +23,7 @@ import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.internal.CargoTargettedTask
 import asia.hombre.neorust.options.RustBenchOptions
+import asia.hombre.neorust.options.RustBenchmarksOptions
 import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBinaryOptions.Binary
@@ -256,6 +257,23 @@ fun RustExtension.test(testConfig: Action<RustTestsOptions>) {
 
     test.isEnabled = true
     this.rustTestsOptions.add(test)
+}
+
+/**
+ * Configure a new bench Cargo target
+ */
+@Suppress("unused")
+fun RustExtension.bench(benchConfig: Action<RustBenchmarksOptions>) {
+    val bench = objects.newInstance(RustBenchmarksOptions::class.java)
+
+    benchConfig.execute(bench)
+
+    if(this.rustBenchmarksOptions.any { it.name.orNull == bench.name.orNull }) {
+        throw IllegalArgumentException("`bench {}` parameter `name` must be unique! ${bench.name.orNull} has already been declared.")
+    }
+
+    bench.isEnabled = true
+    this.rustBenchmarksOptions.add(bench)
 }
 
 /**
