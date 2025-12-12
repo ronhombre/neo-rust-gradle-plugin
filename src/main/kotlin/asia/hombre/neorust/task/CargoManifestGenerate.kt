@@ -19,15 +19,15 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.CrateLibrary
-import asia.hombre.neorust.options.RustBenchmarksOptions
-import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustCrateOptions
-import asia.hombre.neorust.options.RustExamplesOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
-import asia.hombre.neorust.options.RustTestsOptions
+import asia.hombre.neorust.options.targets.BenchmarkConfiguration
+import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.ExampleConfiguration
+import asia.hombre.neorust.options.targets.LibraryConfiguration
+import asia.hombre.neorust.options.targets.TestConfiguration
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -70,15 +70,15 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
 
     //Cargo Targets
     @get:Nested
-    internal abstract val rustLibraryOptions: Property<RustLibraryOptions>
+    internal abstract val libraryConfiguration: Property<LibraryConfiguration>
     @get:Nested
-    internal abstract val rustBinariesOptions: ListProperty<RustBinariesOptions>
+    internal abstract val binaryConfiguration: ListProperty<BinaryConfiguration>
     @get:Nested
-    internal abstract val rustExamplesOptions: ListProperty<RustExamplesOptions>
+    internal abstract val exampleConfiguration: ListProperty<ExampleConfiguration>
     @get:Nested
-    internal abstract val rustTestsOptions: ListProperty<RustTestsOptions>
+    internal abstract val testConfiguration: ListProperty<TestConfiguration>
     @get:Nested
-    internal abstract val rustBenchmarksOptions: ListProperty<RustBenchmarksOptions>
+    internal abstract val benchmarkConfiguration: ListProperty<BenchmarkConfiguration>
 
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -257,7 +257,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             }
         }
 
-        val rustLibraryOptions = rustLibraryOptions.get()
+        val rustLibraryOptions = libraryConfiguration.get()
 
         if(rustLibraryOptions.isEnabled) content.writeTable("lib") {
             writeField("name", rustLibraryOptions.name.orNull)
@@ -273,7 +273,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             writeArrayField("required-features", rustLibraryOptions.requiredFeatures.get())
         }
 
-        val rustBinariesOptions = rustBinariesOptions.get()
+        val rustBinariesOptions = binaryConfiguration.get()
 
         rustBinariesOptions.forEach { binary ->
             content.writeTable("[bin]") {
@@ -291,7 +291,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             }
         }
 
-        val rustExamplesOptions = rustExamplesOptions.get()
+        val rustExamplesOptions = exampleConfiguration.get()
 
         rustExamplesOptions.forEach { example ->
             content.writeTable("[example]") {
@@ -309,7 +309,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             }
         }
 
-        val rustTestsOptions = rustTestsOptions.get()
+        val rustTestsOptions = testConfiguration.get()
 
         rustTestsOptions.forEach { test ->
             content.writeTable("[test]") {
@@ -327,7 +327,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             }
         }
 
-        val rustBenchOptions = rustBenchmarksOptions.get()
+        val rustBenchOptions = benchmarkConfiguration.get()
 
         rustBenchOptions.forEach { bench ->
             content.writeTable("[bench]") {

@@ -18,27 +18,25 @@
 
 
 import asia.hombre.neorust.CrateLibrary
-import asia.hombre.neorust.exception.DuplicateBinaryTargetException
+import asia.hombre.neorust.exception.DuplicateTargetException
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.internal.CargoTargettedTask
 import asia.hombre.neorust.options.RustBenchOptions
-import asia.hombre.neorust.options.RustBenchmarksOptions
-import asia.hombre.neorust.options.RustBinariesOptions
-import asia.hombre.neorust.options.RustBinaryOptions
-import asia.hombre.neorust.options.RustBinaryOptions.Binary
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustCrateOptions
-import asia.hombre.neorust.options.RustExamplesOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustManifestOptions.Package
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
-import asia.hombre.neorust.options.RustTestsOptions
+import asia.hombre.neorust.options.targets.BenchmarkConfiguration
+import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.ExampleConfiguration
+import asia.hombre.neorust.options.targets.LibraryConfiguration
+import asia.hombre.neorust.options.targets.TestConfiguration
 import asia.hombre.neorust.serializable.RustCrateObject
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
@@ -200,102 +198,80 @@ fun RustExtension.profiles(rustProfileOptions: Action<RustProfileOptions>) {
  * Configure this project as a library Crate
  */
 @Suppress("unused")
-fun RustExtension.library(libraryConfig: Action<RustLibraryOptions>) {
-    if(this.rustLibraryOptions.isEnabled) {
+fun RustExtension.library(libraryConfig: Action<LibraryConfiguration>) {
+    if(this.libraryConfiguration.isEnabled) {
         throw IllegalArgumentException("`library {}` should only be configured once!")
     }
-    libraryConfig.execute(this.rustLibraryOptions)
-    this.rustLibraryOptions.isEnabled = true //Enable it
+    libraryConfig.execute(this.libraryConfiguration)
+    this.libraryConfiguration.isEnabled = true //Enable it
 }
 
 /**
  * Configure a new binary Cargo target
  */
 @Suppress("unused")
-fun RustExtension.binary(binaryConfig: Action<RustBinariesOptions>) {
-    val binary = objects.newInstance(RustBinariesOptions::class.java)
+fun RustExtension.binary(binaryConfig: Action<BinaryConfiguration>) {
+    val binary = objects.newInstance(BinaryConfiguration::class.java)
 
     binaryConfig.execute(binary)
 
-    if(this.rustBinariesOptions.any { it.name.orNull == binary.name.orNull }) {
-        throw IllegalArgumentException("`binary {}` parameter `name` must be unique! ${binary.name.orNull} has already been declared.")
+    if(this.binariesConfiguration.any { it.name.orNull == binary.name.orNull }) {
+        throw DuplicateTargetException("`binary {}` parameter `name` must be unique! ${binary.name.orNull} has already been declared.")
     }
 
     binary.isEnabled = true
-    this.rustBinariesOptions.add(binary)
+    this.binariesConfiguration.add(binary)
 }
 
 /**
  * Configure a new example Cargo target
  */
 @Suppress("unused")
-fun RustExtension.example(exampleConfig: Action<RustExamplesOptions>) {
-    val example = objects.newInstance(RustExamplesOptions::class.java)
+fun RustExtension.example(exampleConfig: Action<ExampleConfiguration>) {
+    val example = objects.newInstance(ExampleConfiguration::class.java)
 
     exampleConfig.execute(example)
 
-    if(this.rustExamplesOptions.any { it.name.orNull == example.name.orNull }) {
-        throw IllegalArgumentException("`example {}` parameter `name` must be unique! ${example.name.orNull} has already been declared.")
+    if(this.examplesConfiguration.any { it.name.orNull == example.name.orNull }) {
+        throw DuplicateTargetException("`example {}` parameter `name` must be unique! ${example.name.orNull} has already been declared.")
     }
 
     example.isEnabled = true
-    this.rustExamplesOptions.add(example)
+    this.examplesConfiguration.add(example)
 }
 
 /**
  * Configure a new test Cargo target
  */
 @Suppress("unused")
-fun RustExtension.test(testConfig: Action<RustTestsOptions>) {
-    val test = objects.newInstance(RustTestsOptions::class.java)
+fun RustExtension.test(testConfig: Action<TestConfiguration>) {
+    val test = objects.newInstance(TestConfiguration::class.java)
 
     testConfig.execute(test)
 
-    if(this.rustTestsOptions.any { it.name.orNull == test.name.orNull }) {
-        throw IllegalArgumentException("`test {}` parameter `name` must be unique! ${test.name.orNull} has already been declared.")
+    if(this.testsConfiguration.any { it.name.orNull == test.name.orNull }) {
+        throw DuplicateTargetException("`test {}` parameter `name` must be unique! ${test.name.orNull} has already been declared.")
     }
 
     test.isEnabled = true
-    this.rustTestsOptions.add(test)
+    this.testsConfiguration.add(test)
 }
 
 /**
  * Configure a new bench Cargo target
  */
 @Suppress("unused")
-fun RustExtension.bench(benchConfig: Action<RustBenchmarksOptions>) {
-    val bench = objects.newInstance(RustBenchmarksOptions::class.java)
+fun RustExtension.bench(benchConfig: Action<BenchmarkConfiguration>) {
+    val bench = objects.newInstance(BenchmarkConfiguration::class.java)
 
     benchConfig.execute(bench)
 
-    if(this.rustBenchmarksOptions.any { it.name.orNull == bench.name.orNull }) {
-        throw IllegalArgumentException("`bench {}` parameter `name` must be unique! ${bench.name.orNull} has already been declared.")
+    if(this.benchmarksConfiguration.any { it.name.orNull == bench.name.orNull }) {
+        throw DuplicateTargetException("`bench {}` parameter `name` must be unique! ${bench.name.orNull} has already been declared.")
     }
 
     bench.isEnabled = true
-    this.rustBenchmarksOptions.add(bench)
-}
-
-/**
- * Register a binary target to be built and configure it for custom builds
- */
-@Suppress("unused")
-fun RustBinaryOptions.register(name: String, binary: Action<Binary>? = null) {
-    val bin = objectFactory.newInstance(Binary::class.java)
-    bin.name.set(name)
-
-    binary?.execute(bin)
-
-    if(bin.name.isPresent) {
-        this.list.get().find {
-            it.name.get() == bin.name.get() && it.buildProfile.get() == bin.buildProfile.get()
-        }?.let {
-            throw DuplicateBinaryTargetException(
-                "The binary target with name '$name' and profile '${bin.buildProfile.get()}' has already been registered."
-            )
-        }
-        this.list.add(bin)
-    }
+    this.benchmarksConfiguration.add(bench)
 }
 
 /**

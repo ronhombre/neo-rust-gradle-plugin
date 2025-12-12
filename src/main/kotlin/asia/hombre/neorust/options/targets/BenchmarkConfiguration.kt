@@ -16,26 +16,18 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
+package asia.hombre.neorust.options.targets
 
 import javax.inject.Inject
 
-abstract class RustBenchmarksOptions @Inject constructor(): RustTargetOptions() {
+/**
+ * Customizable configuration for any Rust benchmark target
+ *
+ * @since 0.6.0
+ * @author Ron Lauren Hombre
+ */
+abstract class BenchmarkConfiguration @Inject constructor(): BinaryConfiguration() {
     override val SOURCE_DIRECTORY: String = "bench"
-    init {
-        //Benchmarks are always the "bin" crate type
-        //https://doc.rust-lang.org/cargo/reference/cargo-targets.html#:~:text=Binaries%2C%20tests%2C%20and%20benchmarks%20are%20always%20the%20%E2%80%9Cbin%E2%80%9D%20crate%20type.
-        this.crateType.finalizeValue()
-        path.convention(
-            project
-                .layout
-                .projectDirectory
-                .dir("src")
-                .dir(SOURCE_DIRECTORY)
-                .dir("rust")
-                .file("bench.rs")
-        )
-    }
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
+package asia.hombre.neorust.options.targets
 
 import javax.inject.Inject
 
@@ -26,16 +26,35 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class RustLibraryOptions @Inject constructor(): RustTargetOptions() {
+abstract class LibraryConfiguration @Inject constructor(): CargoTargetConfiguration() {
+    override val SOURCE_DIRECTORY: String = "library"
     init {
         path.convention(
             project
                 .layout
                 .projectDirectory
                 .dir("src")
-                .dir("main")
+                .dir(SOURCE_DIRECTORY)
                 .dir("rust")
                 .file("lib.rs")
         )
+    }
+
+    /**
+     * Attempts to resolve a `.rs` file as the `path` for this Cargo target.
+     *
+     * The file will be searched in directory `src/library/rust/` of this Gradle project.
+     *
+     * So if you do `resolve("lib.rs")`, it will be internally resolved as `src/library/rust/lib.rs`. This
+     * makes it extremely easy to define non-standardly named library Rust files.
+     *
+     * It is also possible to do `resolve("why", "lib.rs")`, and this will be resolved as
+     * `src/library/rust/why/lib.rs`.
+     *
+     * @param paths A list of arguments defining the location of the main file for this Cargo library.
+     * @return `true` if the file exists in the path and has been applied, `false` otherwise.
+     */
+    override fun resolve(vararg paths: String): Boolean {
+        return super.resolve(*paths)
     }
 }
