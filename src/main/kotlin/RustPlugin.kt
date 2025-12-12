@@ -206,21 +206,27 @@ fun RustExtension.library(libraryConfig: Action<LibraryConfiguration>) {
     this.libraryConfiguration.isEnabled = true //Enable it
 }
 
+//TODO: Allow explicit overwriting of configuration of the default binary
 /**
  * Configure a new binary Cargo target
  */
 @Suppress("unused")
 fun RustExtension.binary(binaryConfig: Action<BinaryConfiguration>) {
     val binary = objects.newInstance(BinaryConfiguration::class.java)
+    binary.isEnabled = true
 
     binaryConfig.execute(binary)
 
-    if(this.binariesConfiguration.any { it.name.orNull == binary.name.orNull }) {
-        throw DuplicateTargetException("`binary {}` parameter `name` must be unique! ${binary.name.orNull} has already been declared.")
-    }
+    val potentialConflict = this.binariesConfiguration.find { it.name.orNull == binary.name.orNull }
 
-    binary.isEnabled = true
-    this.binariesConfiguration.add(binary)
+    when (potentialConflict?.isEnabled) {
+        true -> throw DuplicateTargetException("`binary {}` parameter `name` must be unique! ${binary.name.orNull} has already been declared.")
+        false -> {
+            potentialConflict.isEnabled = true
+            binaryConfig.execute(potentialConflict)
+        }
+        else -> this.binariesConfiguration.add(binary)
+    }
 }
 
 /**
@@ -229,15 +235,20 @@ fun RustExtension.binary(binaryConfig: Action<BinaryConfiguration>) {
 @Suppress("unused")
 fun RustExtension.example(exampleConfig: Action<ExampleConfiguration>) {
     val example = objects.newInstance(ExampleConfiguration::class.java)
+    example.isEnabled = true
 
     exampleConfig.execute(example)
 
-    if(this.examplesConfiguration.any { it.name.orNull == example.name.orNull }) {
-        throw DuplicateTargetException("`example {}` parameter `name` must be unique! ${example.name.orNull} has already been declared.")
-    }
+    val potentialConflict = this.examplesConfiguration.find { it.name.orNull == example.name.orNull }
 
-    example.isEnabled = true
-    this.examplesConfiguration.add(example)
+    when (potentialConflict?.isEnabled) {
+        true -> throw DuplicateTargetException("`example {}` parameter `name` must be unique! ${example.name.orNull} has already been declared.")
+        false -> {
+            potentialConflict.isEnabled = true
+            exampleConfig.execute(potentialConflict)
+        }
+        else -> this.examplesConfiguration.add(example)
+    }
 }
 
 /**
@@ -246,15 +257,20 @@ fun RustExtension.example(exampleConfig: Action<ExampleConfiguration>) {
 @Suppress("unused")
 fun RustExtension.test(testConfig: Action<TestConfiguration>) {
     val test = objects.newInstance(TestConfiguration::class.java)
+    test.isEnabled = true
 
     testConfig.execute(test)
 
-    if(this.testsConfiguration.any { it.name.orNull == test.name.orNull }) {
-        throw DuplicateTargetException("`test {}` parameter `name` must be unique! ${test.name.orNull} has already been declared.")
-    }
+    val potentialConflict = this.testsConfiguration.find { it.name.orNull == test.name.orNull }
 
-    test.isEnabled = true
-    this.testsConfiguration.add(test)
+    when (potentialConflict?.isEnabled) {
+        true -> throw DuplicateTargetException("`test {}` parameter `name` must be unique! ${test.name.orNull} has already been declared.")
+        false -> {
+            potentialConflict.isEnabled = true
+            testConfig.execute(potentialConflict)
+        }
+        else -> this.testsConfiguration.add(test)
+    }
 }
 
 /**
@@ -263,15 +279,20 @@ fun RustExtension.test(testConfig: Action<TestConfiguration>) {
 @Suppress("unused")
 fun RustExtension.bench(benchConfig: Action<BenchmarkConfiguration>) {
     val bench = objects.newInstance(BenchmarkConfiguration::class.java)
+    bench.isEnabled = true
 
     benchConfig.execute(bench)
 
-    if(this.benchmarksConfiguration.any { it.name.orNull == bench.name.orNull }) {
-        throw DuplicateTargetException("`bench {}` parameter `name` must be unique! ${bench.name.orNull} has already been declared.")
-    }
+    val potentialConflict = this.benchmarksConfiguration.find { it.name.orNull == bench.name.orNull }
 
-    bench.isEnabled = true
-    this.benchmarksConfiguration.add(bench)
+    when (potentialConflict?.isEnabled) {
+        true -> throw DuplicateTargetException("`bench {}` parameter `name` must be unique! ${bench.name.orNull} has already been declared.")
+        false -> {
+            potentialConflict.isEnabled = true
+            benchConfig.execute(potentialConflict)
+        }
+        else -> this.benchmarksConfiguration.add(bench)
+    }
 }
 
 /**
