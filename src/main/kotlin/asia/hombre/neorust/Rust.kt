@@ -117,6 +117,7 @@ class Rust: Plugin<Project> {
                 rustLibraryOptions.set(extension.rustLibraryOptions)
                 rustBinariesOptions.set(extension.rustBinariesOptions)
                 rustExamplesOptions.set(extension.rustExamplesOptions)
+                rustTestsOptions.set(extension.rustTestsOptions)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)

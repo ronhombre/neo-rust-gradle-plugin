@@ -31,6 +31,7 @@ import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
+import asia.hombre.neorust.options.RustTestsOptions
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -208,4 +209,6 @@ abstract class RustExtension @Inject constructor(project: Project) {
     internal val rustBinariesOptions: MutableList<RustBinariesOptions> = mutableListOf()
     @Internal
     internal val rustExamplesOptions: MutableList<RustExamplesOptions> = mutableListOf()
+    @Internal
+    internal val rustTestsOptions: MutableList<RustTestsOptions> = mutableListOf()
 }

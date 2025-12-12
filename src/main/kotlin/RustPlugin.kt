@@ -37,6 +37,7 @@ import asia.hombre.neorust.options.RustManifestOptions.Package
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
+import asia.hombre.neorust.options.RustTestsOptions
 import asia.hombre.neorust.serializable.RustCrateObject
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
@@ -240,6 +241,22 @@ fun RustExtension.example(exampleConfig: Action<RustExamplesOptions>) {
     this.rustExamplesOptions.add(example)
 }
 
+/**
+ * Configure a new test Cargo target
+ */
+@Suppress("unused")
+fun RustExtension.test(testConfig: Action<RustTestsOptions>) {
+    val test = objects.newInstance(RustTestsOptions::class.java)
+
+    testConfig.execute(test)
+
+    if(this.rustTestsOptions.any { it.name.orNull == test.name.orNull }) {
+        throw IllegalArgumentException("`test {}` parameter `name` must be unique! ${test.name.orNull} has already been declared.")
+    }
+
+    test.isEnabled = true
+    this.rustTestsOptions.add(test)
+}
 
 /**
  * Register a binary target to be built and configure it for custom builds
