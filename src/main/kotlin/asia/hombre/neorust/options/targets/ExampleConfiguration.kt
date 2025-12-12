@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
+package asia.hombre.neorust.options.targets
 
 import javax.inject.Inject
 
@@ -26,38 +26,24 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class RustExamplesOptions @Inject constructor(): RustTargetOptions() {
-    init {
-        //Examples are always the "bin" crate type
-        //https://doc.rust-lang.org/cargo/reference/cargo-targets.html#:~:text=Binaries%2C%20tests%2C%20and%20benchmarks%20are%20always%20the%20%E2%80%9Cbin%E2%80%9D%20crate%20type.
-        this.crateType.finalizeValue()
-        path.convention(
-            project
-                .layout
-                .projectDirectory
-                .dir("src")
-                .dir("main")
-                .dir("rust")
-                .dir("examples")
-                .file("main.rs")
-        )
-    }
+abstract class ExampleConfiguration @Inject constructor(): BinaryConfiguration() {
+    override val SOURCE_DIRECTORY: String = "example"
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.
      *
-     * The file will be searched in directory `src/main/rust/examples/` of this Gradle project.
+     * The file will be searched in directory `src/main/rust/` of this Gradle project.
      *
-     * So if you do `resolve("example.rs")`, it will be internally resolved as `src/main/rust/examples/example.rs`. This
+     * So if you do `resolve("example.rs")`, it will be internally resolved as `src/example/rust/example.rs`. This
      * makes it extremely easy to define multiple example targets.
      *
-     * It is also possible to do `resolve("bin", "client.rs")`, and this will be resolved as
-     * `src/main/rust/examples/bin/client.rs`.
+     * It is also possible to do `resolve("client", "client.rs")`, and this will be resolved as
+     * `src/example/rust/client/client.rs`.
      *
-     * @param paths A list of arguments defining the location of the main file for this binary Cargo target.
+     * @param paths A list of arguments defining the location of the main file for this example Cargo target.
      * @return `true` if the file exists in the path and has been applied, `false` otherwise.
      */
     override fun resolve(vararg paths: String): Boolean {
-        return super.resolve("examples", *paths)
+        return super.resolve(*paths)
     }
 }

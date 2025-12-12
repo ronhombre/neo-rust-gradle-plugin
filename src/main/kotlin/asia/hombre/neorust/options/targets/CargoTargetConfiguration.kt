@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
+package asia.hombre.neorust.options.targets
 
 import org.gradle.api.Project
 import org.gradle.api.file.RegularFileProperty
@@ -34,10 +34,10 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class RustTargetOptions @Inject constructor() {
+abstract class CargoTargetConfiguration @Inject constructor() {
     @Suppress("PropertyName")
     @get:Internal
-    internal open val SOURCE_DIRECTORY = "main"
+    internal open val SOURCE_DIRECTORY = "undefined"
 
     @get:Inject
     abstract val project: Project
@@ -47,6 +47,7 @@ abstract class RustTargetOptions @Inject constructor() {
     abstract val name: Property<String>
 
     @get:InputFile
+    @get:Optional
     abstract val path: RegularFileProperty
 
     @get:Input
@@ -83,18 +84,7 @@ abstract class RustTargetOptions @Inject constructor() {
     var isEnabled = false
 
     /**
-     * Attempts to resolve a `.rs` file as the `path` for this Cargo target.
-     *
-     * The file will be searched in directory `src/main/rust/` of this Gradle project.
-     *
-     * So if you do `resolve("example.rs")`, it will be internally resolved as `src/main/rust/example.rs`. This makes it
-     * extremely easy to define multiple targets.
-     *
-     * It is also possible to do `resolve("bin", "client.rs")`, and this will be resolved as
-     * `src/main/rust/bin/client.rs`.
-     *
-     * @param paths A list of arguments defining the location of the main file for this binary Cargo target.
-     * @return `true` if the file exists in the path and has been applied, `false` otherwise.
+     * An extremely flexible resolver for any `.rs` file for NRGP. This is not meant to be a public-facing API.
      */
     open fun resolve(vararg paths: String): Boolean {
         var currentDirectory = project
