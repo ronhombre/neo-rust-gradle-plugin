@@ -185,14 +185,13 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
 
             if(packageOptions.defaultRun.isPresent)
                 writeField("default-run", packageOptions.defaultRun.get())
-            if(packageOptions.autoBins.isPresent)
-                writeBooleanField("autobins", packageOptions.autoBins.get())
-            if(packageOptions.autoExamples.isPresent)
-                writeBooleanField("autoexamples", packageOptions.autoExamples.get())
-            if(packageOptions.autoTests.isPresent)
-                writeBooleanField("autotests", packageOptions.autoTests.get())
-            if(packageOptions.autoBenches.isPresent)
-                writeBooleanField("autobenches", packageOptions.autoBenches.get())
+
+            //Disable auto-discovery since we violate the standard Rust directory structure anyway
+            writeBooleanField("autolib", false)
+            writeBooleanField("autobins", false)
+            writeBooleanField("autoexamples", false)
+            writeBooleanField("autotests", false)
+            writeBooleanField("autobenches", false)
         }
 
         if(rustProfileOptions.get().dev.get().isNotEmpty()) content.writeTable("profile.dev") {

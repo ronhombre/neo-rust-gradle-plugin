@@ -107,17 +107,5 @@ abstract class RustManifestOptions @Inject constructor(objectFactory: ObjectFact
         @get:Input
         @get:Optional
         abstract val defaultRun: Property<String>
-        @get:Input
-        @get:Optional
-        abstract val autoBins: Property<Boolean>
-        @get:Input
-        @get:Optional
-        abstract val autoExamples: Property<Boolean>
-        @get:Input
-        @get:Optional
-        abstract val autoTests: Property<Boolean>
-        @get:Input
-        @get:Optional
-        abstract val autoBenches: Property<Boolean>
     }
 }
