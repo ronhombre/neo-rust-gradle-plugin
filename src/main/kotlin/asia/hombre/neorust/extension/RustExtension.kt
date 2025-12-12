@@ -20,6 +20,7 @@ package asia.hombre.neorust.extension
 
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.RustBenchOptions
+import asia.hombre.neorust.options.RustBenchmarksOptions
 import asia.hombre.neorust.options.RustBinariesOptions
 import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
@@ -211,4 +212,6 @@ abstract class RustExtension @Inject constructor(project: Project) {
     internal val rustExamplesOptions: MutableList<RustExamplesOptions> = mutableListOf()
     @Internal
     internal val rustTestsOptions: MutableList<RustTestsOptions> = mutableListOf()
+    @Internal
+    internal val rustBenchmarksOptions: MutableList<RustBenchmarksOptions> = mutableListOf()
 }
