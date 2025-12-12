@@ -26,6 +26,7 @@ import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
+import asia.hombre.neorust.options.RustTestsOptions
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -73,6 +74,8 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val rustBinariesOptions: ListProperty<RustBinariesOptions>
     @get:Nested
     internal abstract val rustExamplesOptions: ListProperty<RustExamplesOptions>
+    @get:Nested
+    internal abstract val rustTestsOptions: ListProperty<RustTestsOptions>
 
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -301,6 +304,24 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
                 //The user can't modify this, so we ignore it
                 //writeArrayField("crate-type", example.crateType.get())
                 writeArrayField("required-features", example.requiredFeatures.get())
+            }
+        }
+
+        val rustTestsOptions = rustTestsOptions.get()
+
+        rustTestsOptions.forEach { test ->
+            content.writeTable("[test]") {
+                writeField("name", test.name.orNull)
+                writeField("path", test.path.get().relativeToManifest(cargoToml))
+                writeBooleanField("test", test.test.orNull)
+                writeBooleanField("doctest", test.doctest.orNull)
+                writeBooleanField("bench", test.bench.orNull)
+                writeBooleanField("doc", test.doc.orNull)
+                writeBooleanField("procMacro", test.procMacro.orNull)
+                writeBooleanField("harness", test.harness.orNull)
+                //The user can't modify this, so we ignore it
+                //writeArrayField("crate-type", example.crateType.get())
+                writeArrayField("required-features", test.requiredFeatures.get())
             }
         }
 

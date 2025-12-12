@@ -35,6 +35,10 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class RustTargetOptions @Inject constructor() {
+    @Suppress("PropertyName")
+    @get:Internal
+    internal open val SOURCE_DIRECTORY = "main"
+
     @get:Inject
     abstract val project: Project
 
@@ -97,7 +101,7 @@ abstract class RustTargetOptions @Inject constructor() {
             .layout
             .projectDirectory
             .dir("src")
-            .dir("main")
+            .dir(SOURCE_DIRECTORY)
             .dir("rust")
 
         paths.forEachIndexed { index, path ->
