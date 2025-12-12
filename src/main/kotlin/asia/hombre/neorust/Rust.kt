@@ -244,6 +244,9 @@ class Rust: Plugin<Project> {
         //Auto-resolvers
         autoResolveLibrary(target, extension)
         autoResolveBinaries(target, extension)
+        autoResolveTests(target, extension)
+        autoResolveBenchmarks(target, extension)
+        autoResolveExamples(target, extension)
 
         target.afterEvaluate {
             val packageConfig = extension.rustManifestOptions.packageConfig.get()
