@@ -87,7 +87,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     @get:Input
     @get:Optional
-    abstract val features: Property<String>
+    abstract val features: ListProperty<String>
 
     @get:InputFile
     abstract val manifestPath: RegularFileProperty
@@ -179,7 +179,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
         features.apply {
             if(isPresent && !allFeatures.getOrElse(false) && this@CargoDefaultTask !is CargoClean)
-                args.addAll(listOf("--features", get()))
+                args.addAll(listOf("--features", get().joinToString(" ")))
         }
 
         if(noDefaultFeatures.getOrElse(false) && this !is CargoClean)

@@ -28,17 +28,6 @@ import javax.inject.Inject
  */
 abstract class LibraryConfiguration @Inject constructor(): CargoTargetConfiguration() {
     override val SOURCE_DIRECTORY: String = "library"
-    init {
-        path.convention(
-            project
-                .layout
-                .projectDirectory
-                .dir("src")
-                .dir(SOURCE_DIRECTORY)
-                .dir("rust")
-                .file("lib.rs")
-        )
-    }
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.

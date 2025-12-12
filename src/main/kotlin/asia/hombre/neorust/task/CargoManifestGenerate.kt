@@ -47,6 +47,7 @@ import writeBooleanField
 import writeCrateField
 import writeField
 import writeTable
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -259,7 +260,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
 
         val rustLibraryOptions = libraryConfiguration.get()
 
-        if(rustLibraryOptions.isEnabled) content.writeTable("lib") {
+        if(rustLibraryOptions.path.isPresent) content.writeTable("lib") {
             writeField("name", rustLibraryOptions.name.orNull)
             writeField("path", rustLibraryOptions.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", rustLibraryOptions.test.orNull)
@@ -276,73 +277,25 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         val rustBinariesOptions = binaryConfiguration.get()
 
         rustBinariesOptions.forEach { binary ->
-            content.writeTable("[bin]") {
-                writeField("name", binary.name.orNull)
-                writeField("path", binary.path.get().relativeToManifest(cargoToml))
-                writeBooleanField("test", binary.test.orNull)
-                writeBooleanField("doctest", binary.doctest.orNull)
-                writeBooleanField("bench", binary.bench.orNull)
-                writeBooleanField("doc", binary.doc.orNull)
-                writeBooleanField("procMacro", binary.procMacro.orNull)
-                writeBooleanField("harness", binary.harness.orNull)
-                //The user can't modify this, so we ignore it
-                //writeArrayField("crate-type", binary.crateType.get())
-                writeArrayField("required-features", binary.requiredFeatures.get())
-            }
+            content.writeTargetConfiguration("bin", binary, cargoToml)
         }
 
         val rustExamplesOptions = exampleConfiguration.get()
 
         rustExamplesOptions.forEach { example ->
-            content.writeTable("[example]") {
-                writeField("name", example.name.orNull)
-                writeField("path", example.path.get().relativeToManifest(cargoToml))
-                writeBooleanField("test", example.test.orNull)
-                writeBooleanField("doctest", example.doctest.orNull)
-                writeBooleanField("bench", example.bench.orNull)
-                writeBooleanField("doc", example.doc.orNull)
-                writeBooleanField("procMacro", example.procMacro.orNull)
-                writeBooleanField("harness", example.harness.orNull)
-                //The user can't modify this, so we ignore it
-                //writeArrayField("crate-type", example.crateType.get())
-                writeArrayField("required-features", example.requiredFeatures.get())
-            }
+            content.writeTargetConfiguration("example", example, cargoToml)
         }
 
         val rustTestsOptions = testConfiguration.get()
 
         rustTestsOptions.forEach { test ->
-            content.writeTable("[test]") {
-                writeField("name", test.name.orNull)
-                writeField("path", test.path.get().relativeToManifest(cargoToml))
-                writeBooleanField("test", test.test.orNull)
-                writeBooleanField("doctest", test.doctest.orNull)
-                writeBooleanField("bench", test.bench.orNull)
-                writeBooleanField("doc", test.doc.orNull)
-                writeBooleanField("procMacro", test.procMacro.orNull)
-                writeBooleanField("harness", test.harness.orNull)
-                //The user can't modify this, so we ignore it
-                //writeArrayField("crate-type", example.crateType.get())
-                writeArrayField("required-features", test.requiredFeatures.get())
-            }
+            content.writeTargetConfiguration("test", test, cargoToml)
         }
 
         val rustBenchOptions = benchmarkConfiguration.get()
 
         rustBenchOptions.forEach { bench ->
-            content.writeTable("[bench]") {
-                writeField("name", bench.name.orNull)
-                writeField("path", bench.path.get().relativeToManifest(cargoToml))
-                writeBooleanField("test", bench.test.orNull)
-                writeBooleanField("doctest", bench.doctest.orNull)
-                writeBooleanField("bench", bench.bench.orNull)
-                writeBooleanField("doc", bench.doc.orNull)
-                writeBooleanField("procMacro", bench.procMacro.orNull)
-                writeBooleanField("harness", bench.harness.orNull)
-                //The user can't modify this, so we ignore it
-                //writeArrayField("crate-type", example.crateType.get())
-                writeArrayField("required-features", bench.requiredFeatures.get())
-            }
+            content.writeTargetConfiguration("bench", bench, cargoToml)
         }
 
         //TODO: Resolve custom registries
@@ -360,5 +313,21 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         }*/
 
         cargoToml.writeText(content.removePrefix("\n").toString())
+    }
+
+    private fun StringBuilder.writeTargetConfiguration(name: String, configuration: BinaryConfiguration, cargoToml: File) {
+        writeTable("[$name]") {
+            writeField("name", configuration.name.orNull)
+            writeField("path", configuration.path.get().relativeToManifest(cargoToml))
+            writeBooleanField("test", configuration.test.orNull)
+            writeBooleanField("doctest", configuration.doctest.orNull)
+            writeBooleanField("bench", configuration.bench.orNull)
+            writeBooleanField("doc", configuration.doc.orNull)
+            writeBooleanField("procMacro", configuration.procMacro.orNull)
+            writeBooleanField("harness", configuration.harness.orNull)
+            //The user can't modify this, so we ignore it
+            //writeArrayField("crate-type", configuration.crateType.get())
+            writeArrayField("required-features", configuration.requiredFeatures.get())
+        }
     }
 }

@@ -93,7 +93,7 @@ abstract class RustExtension @Inject constructor(project: Project) {
 
     @get:Input
     @get:Optional
-    abstract val features: Property<String>
+    abstract val features: ListProperty<String>
 
     @get:Input
     @get:Optional
