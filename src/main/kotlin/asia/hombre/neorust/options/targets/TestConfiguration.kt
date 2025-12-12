@@ -16,26 +16,18 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
+package asia.hombre.neorust.options.targets
 
 import javax.inject.Inject
 
-abstract class RustTestsOptions @Inject constructor(): RustTargetOptions() {
+/**
+ * Customizable configuration for any Rust test target
+ *
+ * @since 0.6.0
+ * @author Ron Lauren Hombre
+ */
+abstract class TestConfiguration @Inject constructor(): BinaryConfiguration() {
     override val SOURCE_DIRECTORY: String = "test"
-    init {
-        //Tests are always the "bin" crate type
-        //https://doc.rust-lang.org/cargo/reference/cargo-targets.html#:~:text=Binaries%2C%20tests%2C%20and%20benchmarks%20are%20always%20the%20%E2%80%9Cbin%E2%80%9D%20crate%20type.
-        this.crateType.finalizeValue()
-        path.convention(
-            project
-                .layout
-                .projectDirectory
-                .dir("src")
-                .dir(SOURCE_DIRECTORY)
-                .dir("rust")
-                .file("main.rs")
-        )
-    }
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.
@@ -48,7 +40,7 @@ abstract class RustTestsOptions @Inject constructor(): RustTargetOptions() {
      * It is also possible to do `resolve("system", "client.rs")`, and this will be resolved as
      * `src/test/rust/system/client.rs`.
      *
-     * @param paths A list of arguments defining the location of the main file for this binary Cargo target.
+     * @param paths A list of arguments defining the location of the main file for this test Cargo target.
      * @return `true` if the file exists in the path and has been applied, `false` otherwise.
      */
     override fun resolve(vararg paths: String): Boolean {

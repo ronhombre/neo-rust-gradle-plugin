@@ -16,29 +16,12 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
-
-import javax.inject.Inject
+package asia.hombre.neorust.exception
 
 /**
- * Customizable configuration for any Rust binary target
+ * Thrown when a target with the same name and build profile has been registered more than once.
  *
- * @since 0.6.0
+ * @since 0.4.0
  * @author Ron Lauren Hombre
  */
-abstract class RustBinariesOptions @Inject constructor(): RustTargetOptions() {
-    init {
-        //Binaries are always the "bin" crate type
-        //https://doc.rust-lang.org/cargo/reference/cargo-targets.html#:~:text=Binaries%2C%20tests%2C%20and%20benchmarks%20are%20always%20the%20%E2%80%9Cbin%E2%80%9D%20crate%20type.
-        this.crateType.finalizeValue()
-        path.convention(
-            project
-                .layout
-                .projectDirectory
-                .dir("src")
-                .dir("main")
-                .dir("rust")
-                .file("main.rs")
-        )
-    }
-}
+class DuplicateTargetException(msg: String): RuntimeException(msg)

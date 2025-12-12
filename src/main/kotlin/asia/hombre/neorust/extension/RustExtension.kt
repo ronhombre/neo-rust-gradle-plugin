@@ -20,19 +20,18 @@ package asia.hombre.neorust.extension
 
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.options.RustBenchOptions
-import asia.hombre.neorust.options.RustBenchmarksOptions
-import asia.hombre.neorust.options.RustBinariesOptions
-import asia.hombre.neorust.options.RustBinaryOptions
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
-import asia.hombre.neorust.options.RustExamplesOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustLibraryOptions
 import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
-import asia.hombre.neorust.options.RustTestsOptions
+import asia.hombre.neorust.options.targets.BenchmarkConfiguration
+import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.ExampleConfiguration
+import asia.hombre.neorust.options.targets.LibraryConfiguration
+import asia.hombre.neorust.options.targets.TestConfiguration
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -189,10 +188,6 @@ abstract class RustExtension @Inject constructor(project: Project) {
         RustTestOptions::class.java
     )
     @Internal
-    internal val rustBinaryOptions: RustBinaryOptions = objects.newInstance(
-        RustBinaryOptions::class.java
-    )
-    @Internal
     internal val rustFeaturesOptions: RustFeaturesOptions = objects.newInstance(
         RustFeaturesOptions::class.java
     )
@@ -203,15 +198,15 @@ abstract class RustExtension @Inject constructor(project: Project) {
 
     //Cargo Targets
     @Internal
-    internal val rustLibraryOptions: RustLibraryOptions = objects.newInstance(
-        RustLibraryOptions::class.java
+    internal val libraryConfiguration: LibraryConfiguration = objects.newInstance(
+        LibraryConfiguration::class.java
     )
     @Internal
-    internal val rustBinariesOptions: MutableList<RustBinariesOptions> = mutableListOf()
+    internal val binariesConfiguration: MutableList<BinaryConfiguration> = mutableListOf()
     @Internal
-    internal val rustExamplesOptions: MutableList<RustExamplesOptions> = mutableListOf()
+    internal val examplesConfiguration: MutableList<ExampleConfiguration> = mutableListOf()
     @Internal
-    internal val rustTestsOptions: MutableList<RustTestsOptions> = mutableListOf()
+    internal val testsConfiguration: MutableList<TestConfiguration> = mutableListOf()
     @Internal
-    internal val rustBenchmarksOptions: MutableList<RustBenchmarksOptions> = mutableListOf()
+    internal val benchmarksConfiguration: MutableList<BenchmarkConfiguration> = mutableListOf()
 }

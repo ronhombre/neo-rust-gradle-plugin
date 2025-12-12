@@ -114,11 +114,11 @@ class Rust: Plugin<Project> {
                 rustManifestOptions.set(extension.rustManifestOptions)
                 rustProfileOptions.set(extension.rustProfileOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
-                rustLibraryOptions.set(extension.rustLibraryOptions)
-                rustBinariesOptions.set(extension.rustBinariesOptions)
-                rustExamplesOptions.set(extension.rustExamplesOptions)
-                rustTestsOptions.set(extension.rustTestsOptions)
-                rustBenchmarksOptions.set(extension.rustBenchmarksOptions)
+                libraryConfiguration.set(extension.libraryConfiguration)
+                binaryConfiguration.set(extension.binariesConfiguration)
+                exampleConfiguration.set(extension.examplesConfiguration)
+                testConfiguration.set(extension.testsConfiguration)
+                benchmarkConfiguration.set(extension.benchmarksConfiguration)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)
@@ -180,7 +180,7 @@ class Rust: Plugin<Project> {
             }.get()
         }
 
-        var buildTask = "build" + addIfTest()
+        /*var buildTask = "build" + addIfTest()
         buildTask += addIfConflictingTask(target, buildTask)
         tryRegisterTask {
             val task = target.tasks.register(buildTask, CargoBuild::class.java, false)
@@ -202,7 +202,7 @@ class Rust: Plugin<Project> {
             }
 
             return@tryRegisterTask task.get()
-        }
+        }*/
 
         var publishTask = "publish" + addIfTest()
         publishTask += addIfConflictingTask(target, publishTask)
@@ -261,7 +261,7 @@ class Rust: Plugin<Project> {
             }
             val digestBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
 
-            extension.rustBinaryOptions.list.get().forEach { binary ->
+            extension.binariesConfiguration.forEach { binary ->
                 val lowercaseBinaryName = binary.name.get().lowercase()
                 val buildProfile = binary.buildProfile.get()
                 val lowercaseProfile = buildProfile.name.lowercase()
@@ -363,7 +363,7 @@ class Rust: Plugin<Project> {
                 }
             }
 
-            if(extension.rustLibraryOptions.isEnabled) {
+            if(extension.libraryConfiguration.isEnabled) {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {
