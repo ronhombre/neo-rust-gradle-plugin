@@ -206,7 +206,6 @@ fun RustExtension.library(libraryConfig: Action<LibraryConfiguration>) {
     this.libraryConfiguration.isEnabled = true //Enable it
 }
 
-//TODO: Allow explicit overwriting of configuration of the default binary
 /**
  * Configure a new binary Cargo target
  */
@@ -227,6 +226,14 @@ fun RustExtension.binary(binaryConfig: Action<BinaryConfiguration>) {
         }
         else -> this.binariesConfiguration.add(binary)
     }
+}
+
+/**
+ * Exclude a binary from the build with the specific name
+ */
+@Suppress("unused")
+fun RustExtension.excludeBinary(name: String) {
+    this.excludedBinaries.add(name)
 }
 
 /**
@@ -252,6 +259,14 @@ fun RustExtension.example(exampleConfig: Action<ExampleConfiguration>) {
 }
 
 /**
+ * Exclude an example from the build with the specific name
+ */
+@Suppress("unused")
+fun RustExtension.excludeExample(name: String) {
+    this.excludedExamples.add(name)
+}
+
+/**
  * Configure a new test Cargo target
  */
 @Suppress("unused")
@@ -274,6 +289,14 @@ fun RustExtension.test(testConfig: Action<TestConfiguration>) {
 }
 
 /**
+ * Exclude a test from the build with the specific name
+ */
+@Suppress("unused")
+fun RustExtension.excludeTest(name: String) {
+    this.excludedTests.add(name)
+}
+
+/**
  * Configure a new bench Cargo target
  */
 @Suppress("unused")
@@ -293,6 +316,14 @@ fun RustExtension.bench(benchConfig: Action<BenchmarkConfiguration>) {
         }
         else -> this.benchmarksConfiguration.add(bench)
     }
+}
+
+/**
+ * Exclude a bench from the build with the specific name
+ */
+@Suppress("unused")
+fun RustExtension.excludeBenchmark(name: String) {
+    this.excludedBenchmarks.add(name)
 }
 
 /**

@@ -123,9 +123,13 @@ class Rust: Plugin<Project> {
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 libraryConfiguration.set(extension.libraryConfiguration)
                 binaryConfiguration.set(extension.binariesConfiguration)
+                excludedBinaries.set(extension.excludedBinaries)
                 exampleConfiguration.set(extension.examplesConfiguration)
+                excludedExamples.set(extension.excludedExamples)
                 testConfiguration.set(extension.testsConfiguration)
+                excludedTests.set(extension.excludedTests)
                 benchmarkConfiguration.set(extension.benchmarksConfiguration)
+                excludedBenchmarks.set(extension.excludedBenchmarks)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)
@@ -242,11 +246,11 @@ class Rust: Plugin<Project> {
         }
 
         //Auto-resolvers
-        autoResolveLibrary(target, extension)
-        autoResolveBinaries(target, extension)
-        autoResolveTests(target, extension)
-        autoResolveBenchmarks(target, extension)
-        autoResolveExamples(target, extension)
+        if(extension.autoLib.get()) autoResolveLibrary(target, extension)
+        if(extension.autoBins.get()) autoResolveBinaries(target, extension)
+        if(extension.autoTests.get()) autoResolveTests(target, extension)
+        if(extension.autoBenches.get()) autoResolveBenchmarks(target, extension)
+        if(extension.autoExamples.get()) autoResolveExamples(target, extension)
 
         target.afterEvaluate {
             val packageConfig = extension.rustManifestOptions.packageConfig.get()
@@ -275,7 +279,9 @@ class Rust: Plugin<Project> {
             }
             val digestBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
 
-            extension.binariesConfiguration.forEach { binary ->
+            extension.binariesConfiguration.filterNot {
+                extension.excludedBinaries.contains(it.name.get())
+            }.forEach { binary ->
                 val lowercaseBinaryName = binary.name.get().lowercase()
                 val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar()
                 val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar()
