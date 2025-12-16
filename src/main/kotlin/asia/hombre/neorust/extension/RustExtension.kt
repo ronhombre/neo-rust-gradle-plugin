@@ -93,7 +93,7 @@ abstract class RustExtension @Inject constructor(project: Project) {
 
     @get:Input
     @get:Optional
-    abstract val features: Property<String>
+    abstract val features: ListProperty<String>
 
     @get:Input
     @get:Optional
@@ -158,9 +158,30 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @get:Optional
     abstract val unstableFlags: ListProperty<String>
 
+    @get:Input
+    abstract val autoLib: Property<Boolean>
+
+    @get:Input
+    abstract val autoBins: Property<Boolean>
+
+    @get:Input
+    abstract val autoTests: Property<Boolean>
+
+    @get:Input
+    abstract val autoBenches: Property<Boolean>
+
+    @get:Input
+    abstract val autoExamples: Property<Boolean>
+
     init {
         manifestPath.convention(project.layout.buildDirectory.file("Cargo.toml"))
         targetDirectory.convention(project.layout.buildDirectory.dir("target"))
+
+        autoLib.convention(true)
+        autoBins.convention(true)
+        autoTests.convention(true)
+        autoBenches.convention(true)
+        autoExamples.convention(true)
     }
 
     @Internal
@@ -209,4 +230,13 @@ abstract class RustExtension @Inject constructor(project: Project) {
     internal val testsConfiguration: MutableList<TestConfiguration> = mutableListOf()
     @Internal
     internal val benchmarksConfiguration: MutableList<BenchmarkConfiguration> = mutableListOf()
+
+    @Internal
+    internal val excludedBinaries: MutableList<String> = mutableListOf()
+    @Internal
+    internal val excludedExamples: MutableList<String> = mutableListOf()
+    @Internal
+    internal val excludedTests: MutableList<String> = mutableListOf()
+    @Internal
+    internal val excludedBenchmarks: MutableList<String> = mutableListOf()
 }

@@ -20,7 +20,11 @@ package asia.hombre.neorust
 
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
-import asia.hombre.neorust.option.BuildProfile
+import asia.hombre.neorust.options.RustCrateOptions
+import asia.hombre.neorust.options.targets.BenchmarkConfiguration
+import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.ExampleConfiguration
+import asia.hombre.neorust.options.targets.TestConfiguration
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
 import asia.hombre.neorust.task.CargoCheck
@@ -36,6 +40,8 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.attributes.Category
+import org.gradle.api.file.ProjectLayout
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import readRustCrateFromFile
 import readTomlStringFields
@@ -45,6 +51,7 @@ import setDefaultProperties
 import setPublishProperties
 import setTargettedProperties
 import setTestProperties
+import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
 
@@ -116,9 +123,13 @@ class Rust: Plugin<Project> {
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 libraryConfiguration.set(extension.libraryConfiguration)
                 binaryConfiguration.set(extension.binariesConfiguration)
+                excludedBinaries.set(extension.excludedBinaries)
                 exampleConfiguration.set(extension.examplesConfiguration)
+                excludedExamples.set(extension.excludedExamples)
                 testConfiguration.set(extension.testsConfiguration)
+                excludedTests.set(extension.excludedTests)
                 benchmarkConfiguration.set(extension.benchmarksConfiguration)
+                excludedBenchmarks.set(extension.excludedBenchmarks)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)
@@ -234,6 +245,13 @@ class Rust: Plugin<Project> {
             }.get()
         }
 
+        //Auto-resolvers
+        if(extension.autoLib.get()) autoResolveLibrary(target, extension)
+        if(extension.autoBins.get()) autoResolveBinaries(target, extension)
+        if(extension.autoTests.get()) autoResolveTests(target, extension)
+        if(extension.autoBenches.get()) autoResolveBenchmarks(target, extension)
+        if(extension.autoExamples.get()) autoResolveExamples(target, extension)
+
         target.afterEvaluate {
             val packageConfig = extension.rustManifestOptions.packageConfig.get()
             packageConfig.name.convention(project.name)
@@ -261,80 +279,38 @@ class Rust: Plugin<Project> {
             }
             val digestBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
 
-            extension.binariesConfiguration.forEach { binary ->
+            extension.binariesConfiguration.filterNot {
+                extension.excludedBinaries.contains(it.name.get())
+            }.forEach { binary ->
                 val lowercaseBinaryName = binary.name.get().lowercase()
-                val buildProfile = binary.buildProfile.get()
-                val lowercaseProfile = buildProfile.name.lowercase()
-                val taskNameSuffix = if(buildProfile == BuildProfile.DEFAULT) "" else lowercaseProfile.uppercaseFirstChar()
-                val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
-                val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar() + taskNameSuffix
+                val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar()
+                val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar()
+                //Dev
                 val cargoBuildTask = tryRegisterTask {
-                    val task = target.tasks.register(binaryBuildTask, CargoBuild::class.java, buildProfile == BuildProfile.RELEASE)
-
+                    val task = target.tasks.register(binaryBuildTask, CargoBuild::class.java, false)
                     task.configure {
                         dependsOn("generateCargoManifest")
                         group = "build"
-                        description = "Build '$lowercaseBinaryName' using the global build profile"
+                        description = "Build '$lowercaseBinaryName' binary as dev."
 
                         this.ext = extension
                         setDefaultProperties()
                         setTargettedProperties()
                         setBuildProperties()
 
-                        when(buildProfile) {
-                            BuildProfile.DEFAULT -> logger.debug("Using the default profile for $binaryBuildTask")
-                            BuildProfile.DEV -> this.release.set(false)
-                            BuildProfile.RELEASE -> this.release.set(true)
-                        }
+                        this.features.addAll(binary.buildFeatures.get())
+
+                        this.release.set(false)
                         this.bin.set(mutableListOf()) //Get off the Global property
                         this.bin.add(binary.name.get())
 
+                        inputs.file(manifestPath)
                         inputs.dir(binary.path.get().asFile.parentFile.also { it.mkdirs() })
 
-                        //TODO: Switch to xxHash
                         //Calculate hash
-                        inputs.property("files-hash",
-                            let {
-                                val digest = MessageDigest.getInstance("SHA-256")
-
-                                gradleRustDependencies?.forEach { crate ->
-                                    val crateManifestDir = manifestPath
-                                        .get()
-                                        .asFile
-                                        .toPath()
-                                        .resolveSibling(crate.path.get())
-                                        .normalize()
-
-                                    val libraryPath = crateManifestDir.resolve("Cargo.toml")
-                                        .toFile()
-                                        .readTomlStringFields("lib", listOf("path"))["path"]?:
-                                    throw IllegalArgumentException(
-                                        "Crate ${binary.name.get()} is not a library because the \"path\" value cannot be found."
-                                    )
-
-                                    val libraryRustSourceDir = crateManifestDir
-                                        .resolve(libraryPath)
-                                        .normalize()
-                                        .toFile()
-                                        .parentFile
-
-                                    libraryRustSourceDir
-                                        .walkTopDown()
-                                        .filter { it.isFile && it.extension == "rs" }
-                                        .toSet()
-                                        .forEach {
-                                            it.inputStream().use { input ->
-                                                var bytesRead = input.read(digestBuffer)
-                                                while (bytesRead > 0) {
-                                                    digest.update(digestBuffer, 0, bytesRead)
-                                                    bytesRead = input.read(digestBuffer)
-                                                }
-                                            }
-                                        }
-                                }
-
-                                digest.digest()
-                            }
+                        inputs.property(
+                            "files-hash",
+                            hashSourceFiles(digestBuffer, gradleRustDependencies, manifestPath)
                         )
                         outputs.dir(outputTargetDirectory)
                     }
@@ -343,19 +319,59 @@ class Rust: Plugin<Project> {
                 } as CargoBuild
                 tryRegisterTask {
                     target.tasks.register(runTask, RunBinary::class.java) {
-                        dependsOn(binaryBuildTask)
                         group = "run"
-                        description = "Execute binary '$lowercaseBinaryName' using the profile '$lowercaseProfile'"
+                        description = "Execute binary '$lowercaseBinaryName' as dev."
 
                         this.targetDirectory.set(cargoBuildTask.outputTargetDirectory)
                         this.manifestPath.set(cargoBuildTask.manifestPath)
                         this.binaryName.set(lowercaseBinaryName)
-                        this.buildProfile.set(
-                            if(cargoBuildTask.release.isPresent && cargoBuildTask.release.get())
-                                "release"
-                            else
-                                "debug"
+                        this.buildProfile.set("debug")
+                        this.workingDir.set(binary.workingDir)
+                        this.arguments.set(binary.arguments)
+                        this.environment.set(binary.environment)
+                    }.get()
+                }
+                //Release
+                val cargoReleaseBuildTask = tryRegisterTask {
+                    val task = target.tasks.register(binaryBuildTask + "Release", CargoBuild::class.java, true)
+                    task.configure {
+                        dependsOn("generateCargoManifest")
+                        group = "build"
+                        description = "Build '$lowercaseBinaryName' binary as release."
+
+                        this.ext = extension
+                        setDefaultProperties()
+                        setTargettedProperties()
+                        setBuildProperties()
+
+                        this.features.addAll(binary.buildFeatures.get())
+
+                        this.release.set(true)
+                        this.bin.set(mutableListOf()) //Get off the Global property
+                        this.bin.add(binary.name.get())
+
+                        inputs.file(manifestPath)
+                        inputs.dir(binary.path.get().asFile.parentFile.also { it.mkdirs() })
+
+                        //Calculate hash
+                        inputs.property(
+                            "files-hash",
+                            hashSourceFiles(digestBuffer, gradleRustDependencies, manifestPath)
                         )
+                        outputs.dir(outputTargetDirectory)
+                    }
+
+                    return@tryRegisterTask task.get()
+                } as CargoBuild
+                tryRegisterTask {
+                    target.tasks.register(runTask + "Release", RunBinary::class.java) {
+                        group = "run"
+                        description = "Execute binary '$lowercaseBinaryName' as release."
+
+                        this.targetDirectory.set(cargoReleaseBuildTask.outputTargetDirectory)
+                        this.manifestPath.set(cargoReleaseBuildTask.manifestPath)
+                        this.binaryName.set(lowercaseBinaryName)
+                        this.buildProfile.set("release")
                         this.workingDir.set(binary.workingDir)
                         this.arguments.set(binary.arguments)
                         this.environment.set(binary.environment)
@@ -363,7 +379,7 @@ class Rust: Plugin<Project> {
                 }
             }
 
-            if(extension.libraryConfiguration.isEnabled) {
+            if(extension.libraryConfiguration.path.isPresent) {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {
@@ -415,6 +431,134 @@ class Rust: Plugin<Project> {
         }
     }
 
+    //TODO: Switch to xxHash
+    private fun hashSourceFiles(buffer: ByteArray, dependencies: List<RustCrateOptions>?, manifestPath: RegularFileProperty): ByteArray {
+        val digest = MessageDigest.getInstance("SHA-256")
+
+        dependencies?.forEach { crate ->
+            val crateManifestDir = manifestPath
+                .get()
+                .asFile
+                .toPath()
+                .resolveSibling(crate.path.get())
+                .normalize()
+
+            val libraryPath = crateManifestDir.resolve("Cargo.toml")
+                .toFile()
+                .readTomlStringFields("lib", listOf("path"))["path"]?: return ByteArray(0)
+
+            val libraryRustSourceDir = crateManifestDir
+                .resolve(libraryPath)
+                .normalize()
+                .toFile()
+                .parentFile
+
+            libraryRustSourceDir
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "rs" }
+                .toSet()
+                .forEach {
+                    it.inputStream().use { input ->
+                        var bytesRead = input.read(buffer)
+                        while (bytesRead > 0) {
+                            digest.update(buffer, 0, bytesRead)
+                            bytesRead = input.read(buffer)
+                        }
+                    }
+                }
+        }
+
+        return digest.digest()
+    }
+
+    private fun autoResolveLibrary(project: Project, extension: RustExtension) {
+        val libraryDirectory = project
+            .layout
+            .projectDirectory
+            .dir("src")
+            .dir("library")
+            .dir("rust")
+
+        val potentialLibraryFile = libraryDirectory.file("lib.rs")
+
+        if(potentialLibraryFile.asFile.exists()) {
+            extension.libraryConfiguration.path.set(potentialLibraryFile)
+        }
+    }
+
+    private fun resolveMainRustFiles(layout: ProjectLayout, sourceDir: String): List<File> {
+        val mainDirectory = layout
+            .projectDirectory
+            .dir("src")
+            .dir(sourceDir)
+            .dir("rust")
+
+        return mainDirectory
+            .asFile
+            .listFiles()
+            .filter { file -> file.extension == "rs" || (file.isDirectory && file.resolve("main.rs").isFile) }
+    }
+
+    private fun autoResolveBinaries(project: Project, extension: RustExtension) {
+        resolveMainRustFiles(project.layout, "main").forEach { file ->
+            val configuration = project.objects.newInstance(BinaryConfiguration::class.java).apply {
+                if(file.name == "main.rs")
+                    name.set(project.name)
+                else
+                    name.set(file.name)
+
+                path.set(file)
+            }
+
+            extension.binariesConfiguration.add(configuration)
+        }
+    }
+
+    private fun autoResolveTests(project: Project, extension: RustExtension) {
+        resolveMainRustFiles(project.layout, "test").forEach { file ->
+            val configuration = project.objects.newInstance(TestConfiguration::class.java).apply {
+                if(file.name == "main.rs")
+                    name.set(project.name)
+                else
+                    name.set(file.name)
+
+                path.set(file)
+            }
+
+            extension.testsConfiguration.add(configuration)
+        }
+    }
+
+    private fun autoResolveBenchmarks(project: Project, extension: RustExtension) {
+        resolveMainRustFiles(project.layout, "bench").forEach { file ->
+            val configuration = project.objects.newInstance(BenchmarkConfiguration::class.java).apply {
+                if(file.name == "main.rs")
+                    name.set(project.name)
+                else
+                    name.set(file.name)
+
+                path.set(file)
+            }
+
+            extension.benchmarksConfiguration.add(configuration)
+        }
+    }
+
+    private fun autoResolveExamples(project: Project, extension: RustExtension) {
+        resolveMainRustFiles(project.layout, "example").forEach { file ->
+            val configuration = project.objects.newInstance(ExampleConfiguration::class.java).apply {
+                if(file.name == "main.rs")
+                    name.set(project.name)
+                else
+                    name.set(file.name)
+
+                path.set(file)
+            }
+
+            extension.examplesConfiguration.add(configuration)
+        }
+    }
+
     private fun addIfTest(): String {
         return if(IS_TEST_ENVIRONMENT) "NeoRust" else ""
     }
@@ -444,8 +588,9 @@ class Rust: Plugin<Project> {
         try {
             return block.invoke()
         } catch(e: InvalidUserDataException) {
+            val name = e.message?.substringAfter('\'')?.substringBefore('\'')
             throw IllegalStateException(
-                "Plugin did not expect a conflicting task name! Is there another Rust Gradle Plugin?"
+                "Plugin did not expect a conflicting task name '$name'! Is there another Rust Gradle Plugin?"
             )
         }
     }

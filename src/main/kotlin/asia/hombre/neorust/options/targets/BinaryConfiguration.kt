@@ -50,6 +50,10 @@ abstract class BinaryConfiguration @Inject constructor(): CargoTargetConfigurati
     @get:Optional
     abstract val environment: MapProperty<String, String>
 
+    @get:Input
+    @get:Optional
+    abstract val buildFeatures: ListProperty<String>
+
     init {
         //Binaries, Tests, Benchmarks, and Examples are always the "bin" crate type
         //https://doc.rust-lang.org/cargo/reference/cargo-targets.html#:~:text=Binaries%2C%20tests%2C%20and%20benchmarks%20are%20always%20the%20%E2%80%9Cbin%E2%80%9D%20crate%20type.
