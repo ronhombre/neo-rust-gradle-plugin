@@ -80,6 +80,10 @@ abstract class CargoTargetConfiguration @Inject constructor() {
     @get:Input
     abstract val requiredFeatures: ListProperty<String>
 
+    @get:Input
+    @get:Optional
+    abstract val buildFeatures: ListProperty<String>
+
     @get:Internal
     var isEnabled = false
 
