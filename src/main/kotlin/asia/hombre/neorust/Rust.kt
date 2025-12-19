@@ -526,6 +526,7 @@ class Rust: Plugin<Project> {
         return mainDirectory
             .asFile
             .listFiles()
+            .orEmpty()
             .filter { file -> file.extension == "rs" || (file.isDirectory && file.resolve("main.rs").isFile) }
     }
 
