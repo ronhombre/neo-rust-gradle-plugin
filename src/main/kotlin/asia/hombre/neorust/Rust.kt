@@ -272,7 +272,7 @@ class Rust: Plugin<Project> {
                 logger.error("Couldn't read the resolved Rust crates. Do we have the correct file permissions?", e)
                 null
             } catch (e: RuntimeException) {
-                logger.error("Corrupted resolved Rust crate detected and it has been deleted. Please re-run any task to re-generate it.", e)
+                logger.error("Corrupted resolved Rust crate detected and has been deleted. Please re-run any task to re-generate it.", e)
                 null
             } catch (e: Exception) {
                 logger.error("Unknown error encountered.", e)
