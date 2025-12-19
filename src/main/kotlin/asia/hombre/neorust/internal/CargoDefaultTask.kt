@@ -179,7 +179,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
         features.apply {
             if(isPresent && !allFeatures.getOrElse(false) && this@CargoDefaultTask !is CargoClean)
-                args.addAll(listOf("--features", get().joinToString(" ")))
+                args.addAll(listOf("--features", get().toSet().joinToString(" ")))
         }
 
         if(noDefaultFeatures.getOrElse(false) && this !is CargoClean)

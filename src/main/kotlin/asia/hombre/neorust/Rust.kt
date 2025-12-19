@@ -23,6 +23,7 @@ import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.targets.BenchmarkConfiguration
 import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.CargoTargetConfiguration
 import asia.hombre.neorust.options.targets.ExampleConfiguration
 import asia.hombre.neorust.options.targets.TestConfiguration
 import asia.hombre.neorust.task.CargoBench
@@ -194,7 +195,7 @@ class Rust: Plugin<Project> {
         /*var buildTask = "build" + addIfTest()
         buildTask += addIfConflictingTask(target, buildTask)
         tryRegisterTask {
-            val task = target.tasks.register(buildTask, CargoBuild::class.java, false)
+            val task = target.tasks.register(buildTask, CargoBuild::class.java)
 
             task.configure {
                 dependsOn("generateCargoManifest")
@@ -279,111 +280,43 @@ class Rust: Plugin<Project> {
             }
             val digestBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
 
-            extension.binariesConfiguration.filterNot {
-                extension.excludedBinaries.contains(it.name.get())
-            }.forEach { binary ->
-                val lowercaseBinaryName = binary.name.get().lowercase()
-                val binaryBuildTask = "build" + lowercaseBinaryName.uppercaseFirstChar()
-                val runTask = "run" + lowercaseBinaryName.uppercaseFirstChar()
-                //Dev
-                val cargoBuildTask = tryRegisterTask {
-                    val task = target.tasks.register(binaryBuildTask, CargoBuild::class.java, false)
-                    task.configure {
-                        dependsOn("generateCargoManifest")
-                        group = "build"
-                        description = "Build '$lowercaseBinaryName' binary as dev."
-
-                        this.ext = extension
-                        setDefaultProperties()
-                        setTargettedProperties()
-                        setBuildProperties()
-
-                        this.features.addAll(binary.buildFeatures.get())
-
-                        this.release.set(false)
-                        this.bin.set(mutableListOf()) //Get off the Global property
-                        this.bin.add(binary.name.get())
-
-                        inputs.file(manifestPath)
-                        inputs.dir(binary.path.get().asFile.parentFile.also { it.mkdirs() })
-
-                        //Calculate hash
-                        inputs.property(
-                            "files-hash",
-                            hashSourceFiles(digestBuffer, gradleRustDependencies, manifestPath)
-                        )
-                        outputs.dir(outputTargetDirectory)
-                    }
-
-                    return@tryRegisterTask task.get()
-                } as CargoBuild
-                tryRegisterTask {
-                    target.tasks.register(runTask, RunBinary::class.java) {
-                        group = "run"
-                        description = "Execute binary '$lowercaseBinaryName' as dev."
-
-                        this.targetDirectory.set(cargoBuildTask.outputTargetDirectory)
-                        this.manifestPath.set(cargoBuildTask.manifestPath)
-                        this.binaryName.set(lowercaseBinaryName)
-                        this.buildProfile.set("debug")
-                        this.workingDir.set(binary.workingDir)
-                        this.arguments.set(binary.arguments)
-                        this.environment.set(binary.environment)
-                    }.get()
+            extension
+                .binariesConfiguration
+                .filterNot {
+                    extension.excludedBinaries.contains(it.name.get())
+                }.forEach { config ->
+                    target.addBuildTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
-                //Release
-                val cargoReleaseBuildTask = tryRegisterTask {
-                    val task = target.tasks.register(binaryBuildTask + "Release", CargoBuild::class.java, true)
-                    task.configure {
-                        dependsOn("generateCargoManifest")
-                        group = "build"
-                        description = "Build '$lowercaseBinaryName' binary as release."
 
-                        this.ext = extension
-                        setDefaultProperties()
-                        setTargettedProperties()
-                        setBuildProperties()
-
-                        this.features.addAll(binary.buildFeatures.get())
-
-                        this.release.set(true)
-                        this.bin.set(mutableListOf()) //Get off the Global property
-                        this.bin.add(binary.name.get())
-
-                        inputs.file(manifestPath)
-                        inputs.dir(binary.path.get().asFile.parentFile.also { it.mkdirs() })
-
-                        //Calculate hash
-                        inputs.property(
-                            "files-hash",
-                            hashSourceFiles(digestBuffer, gradleRustDependencies, manifestPath)
-                        )
-                        outputs.dir(outputTargetDirectory)
-                    }
-
-                    return@tryRegisterTask task.get()
-                } as CargoBuild
-                tryRegisterTask {
-                    target.tasks.register(runTask + "Release", RunBinary::class.java) {
-                        group = "run"
-                        description = "Execute binary '$lowercaseBinaryName' as release."
-
-                        this.targetDirectory.set(cargoReleaseBuildTask.outputTargetDirectory)
-                        this.manifestPath.set(cargoReleaseBuildTask.manifestPath)
-                        this.binaryName.set(lowercaseBinaryName)
-                        this.buildProfile.set("release")
-                        this.workingDir.set(binary.workingDir)
-                        this.arguments.set(binary.arguments)
-                        this.environment.set(binary.environment)
-                    }.get()
+            extension
+                .examplesConfiguration
+                .filterNot {
+                    extension.excludedExamples.contains(it.name.get())
+                }.forEach { config ->
+                    target.addBuildTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
-            }
+
+            extension
+                .testsConfiguration
+                .filterNot {
+                    extension.excludedTests.contains(it.name.get())
+                }.forEach { config ->
+                    target.addBuildTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
+                }
+
+            extension
+                .benchmarksConfiguration
+                .filterNot {
+                    extension.excludedBenchmarks.contains(it.name.get())
+                }.forEach { config ->
+                    target.addBuildTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
+                }
 
             if(extension.libraryConfiguration.path.isPresent) {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {
-                    val task = target.tasks.register(buildLibraryTask, CargoBuild::class.java, false)
+                    val task = target.tasks.register(buildLibraryTask, CargoBuild::class.java)
 
                     task.configure {
                         dependsOn("generateCargoManifest")
@@ -403,7 +336,7 @@ class Rust: Plugin<Project> {
                 var buildLibraryReleaseTask = "buildLibraryOnlyRelease" + addIfTest()
                 buildLibraryReleaseTask += addIfConflictingTask(target, buildLibraryReleaseTask)
                 tryRegisterTask {
-                    val task = target.tasks.register(buildLibraryReleaseTask, CargoBuild::class.java, true)
+                    val task = target.tasks.register(buildLibraryReleaseTask, CargoBuild::class.java)
 
                     task.configure {
                         dependsOn("generateCargoManifest")
@@ -428,6 +361,103 @@ class Rust: Plugin<Project> {
                     dependsOn.add("checkCargoExists")
                 }
             }
+        }
+    }
+
+    private fun Project.addBuildTaskForTarget(
+        buffer: ByteArray,
+        gradleRustDependencies: List<RustCrateOptions>?,
+        extension: RustExtension,
+        configuration: CargoTargetConfiguration
+    ) {
+        val lowercaseTargetName = configuration.name.get().lowercase()
+        //Dev
+        configureAsIndependentBuild(
+            buffer,
+            gradleRustDependencies,
+            extension,
+            lowercaseTargetName,
+            configuration,
+            false
+        )
+        //Release
+        configureAsIndependentBuild(
+            buffer,
+            gradleRustDependencies,
+            extension,
+            lowercaseTargetName,
+            configuration,
+            true
+        )
+    }
+
+    private fun Project.configureAsIndependentBuild(
+        buffer: ByteArray,
+        gradleRustDependencies: List<RustCrateOptions>?,
+        extension: RustExtension,
+        name: String,
+        configuration: CargoTargetConfiguration,
+        release: Boolean
+    ) {
+        //A hack to avoid having to overload this method with too many parameters such as the target configuration name
+        val configName = configuration
+            .javaClass
+            .name
+            .substringAfterLast(".")
+            .substringBefore("Configuration")
+            .lowercase()
+
+        val task = tryRegisterTask {
+            val task = this.tasks.register(
+                "build" + configName.uppercaseFirstChar() + name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                CargoBuild::class.java
+            )
+
+            task.configure {
+                dependsOn("generateCargoManifest")
+                group = "build"
+                description = "Build '$name' $configName as " + if(release) "release." else "dev."
+
+                this.ext = extension
+                setDefaultProperties()
+                setTargettedProperties()
+                setBuildProperties()
+
+                this.release.set(release)
+                this.features.addAll(configuration.buildFeatures.get())
+
+                this.bin.set(mutableListOf()) //Get off the Global property
+                this.bin.add(configuration.name.get())
+
+                inputs.file(manifestPath)
+                inputs.dir(configuration.path.get().asFile.parentFile.also { it.mkdirs() })
+
+                //Calculate hash
+                inputs.property(
+                    "files-hash",
+                    hashSourceFiles(buffer, gradleRustDependencies, manifestPath)
+                )
+                outputs.dir(outputTargetDirectory)
+            }
+
+            return@tryRegisterTask task.get()
+        } as CargoBuild
+
+        tryRegisterTask {
+            this.tasks.register("run" + configName.uppercaseFirstChar() + name.uppercaseFirstChar() + if(release) "Release" else "Dev", RunBinary::class.java) {
+                group = "run"
+                description = "Execute $configName '$name' as " + if(release) "release." else "dev."
+
+                this.targetDirectory.set(task.outputTargetDirectory)
+                this.manifestPath.set(task.manifestPath)
+                this.binaryName.set(name)
+                this.buildProfile.set(if(release) "release" else "debug")
+                if(configuration is BinaryConfiguration) {
+                    this.workingDir.set(configuration.workingDir)
+                    this.arguments.set(configuration.arguments)
+                    this.environment.set(configuration.environment)
+                }
+            }.get()
         }
     }
 

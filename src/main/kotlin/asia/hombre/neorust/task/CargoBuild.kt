@@ -21,6 +21,7 @@ package asia.hombre.neorust.task
 import asia.hombre.neorust.internal.CargoTargettedTask
 import asia.hombre.neorust.option.CargoMessageFormat
 import asia.hombre.neorust.option.CargoTiming
+import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -37,7 +38,7 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-abstract class CargoBuild @Inject constructor(releaseBuild: Boolean): CargoTargettedTask() {
+abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     @get:Input
     @get:Optional
     abstract val workspace: Property<Boolean>
@@ -72,10 +73,12 @@ abstract class CargoBuild @Inject constructor(releaseBuild: Boolean): CargoTarge
 
     init {
         outputTargetDirectory.convention(
-            if(releaseBuild) {
-                targetDirectory.dir("release")
-            } else {
-                targetDirectory.dir("debug")
+            project.provider<Directory> {
+                if(release.getOrElse(false)) {
+                    targetDirectory.dir("release")
+                } else {
+                    targetDirectory.dir("debug")
+                }.get()
             }
         )
     }
