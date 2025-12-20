@@ -5,9 +5,9 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
- *        and included as LICENSE.txt in this Project.
+ * and included as LICENSE.txt in this Project.
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,4 +24,29 @@ package asia.hombre.neorust.option
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-enum class CargoTiming { none, default, html, json, html_and_json }
+enum class CargoTiming {
+    /**
+     * Does not generate any timing report.
+     */
+    none,
+
+    /**
+     * Uses the default timing report format (equivalent to passing --timings without arguments).
+     */
+    default,
+
+    /**
+     * Writes a human-readable HTML report to the target/cargo-timings directory.
+     */
+    html,
+
+    /**
+     * Emits machine-readable timing information in JSON format.
+     */
+    json,
+
+    /**
+     * Generates both the HTML report and the JSON machine-readable data.
+     */
+    html_and_json
+}
