@@ -131,14 +131,6 @@ internal fun CargoRun.setRunProperties(configuration: BinaryConfiguration) {
 }
 
 /**
- * Modify the Cargo crate manifest
- */
-@Suppress("unused")
-fun RustExtension.manifest(rustPackageOptions: Action<RustPackageOptions>) {
-    rustPackageOptions.execute(this.rustPackageOptions)
-}
-
-/**
  * Modify the Global build options
  */
 @Suppress("unused")
