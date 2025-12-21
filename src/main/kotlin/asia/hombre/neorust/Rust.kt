@@ -206,7 +206,14 @@ class Rust: Plugin<Project> {
                 setTargettedProperties()
                 setBuildProperties()
                 this.bin.addAll(target.provider {
-                    extension.rustBinaryOptions.list.get().map { it.name.get() }.toSet().asIterable()
+                    extension
+                        .binariesConfiguration
+                        .filterNot {
+                            extension.excludedBinaries.contains(it.name.get())
+                        }.map {
+                            it.name.get()
+                        }.toSet()
+                        .asIterable()
                 })
 
                 inputs.file(manifestPath)
@@ -532,12 +539,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveBinaries(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "main").forEach { file ->
-            val configuration = project.objects.newInstance(BinaryConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                BinaryConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 
@@ -547,12 +552,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveTests(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "test").forEach { file ->
-            val configuration = project.objects.newInstance(TestConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                TestConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 
@@ -562,12 +565,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveBenchmarks(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "bench").forEach { file ->
-            val configuration = project.objects.newInstance(BenchmarkConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                BenchmarkConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 
@@ -577,12 +578,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveExamples(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "example").forEach { file ->
-            val configuration = project.objects.newInstance(ExampleConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                ExampleConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 

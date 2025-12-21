@@ -32,7 +32,7 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class BinaryConfiguration @Inject constructor(): CargoTargetConfiguration() {
+abstract class BinaryConfiguration @Inject constructor(name: String): CargoTargetConfiguration(name) {
     override val SOURCE_DIRECTORY: String = "main"
 
     @get:Input

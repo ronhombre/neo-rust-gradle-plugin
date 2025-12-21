@@ -220,7 +220,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
     //Cargo Targets
     @Internal
     internal val libraryConfiguration: LibraryConfiguration = objects.newInstance(
-        LibraryConfiguration::class.java
+        LibraryConfiguration::class.java,
+        project.name
     )
     @Internal
     internal val binariesConfiguration: MutableList<BinaryConfiguration> = mutableListOf()

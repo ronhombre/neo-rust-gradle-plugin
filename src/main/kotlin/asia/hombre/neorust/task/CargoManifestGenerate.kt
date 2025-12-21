@@ -25,6 +25,7 @@ import asia.hombre.neorust.options.RustManifestOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.targets.BenchmarkConfiguration
 import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.CargoTargetConfiguration
 import asia.hombre.neorust.options.targets.ExampleConfiguration
 import asia.hombre.neorust.options.targets.LibraryConfiguration
 import asia.hombre.neorust.options.targets.TestConfiguration
@@ -269,7 +270,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         val rustLibraryOptions = libraryConfiguration.get()
 
         if(rustLibraryOptions.path.isPresent) content.writeTable("lib") {
-            writeField("name", rustLibraryOptions.name.orNull)
+            writeField("name", rustLibraryOptions.name.get().lowercase())
             writeField("path", rustLibraryOptions.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", rustLibraryOptions.test.orNull)
             writeBooleanField("doctest", rustLibraryOptions.doctest.orNull)
@@ -335,9 +336,9 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         cargoToml.writeText(content.removePrefix("\n").toString())
     }
 
-    private fun StringBuilder.writeTargetConfiguration(name: String, configuration: BinaryConfiguration, cargoToml: File) {
+    private fun StringBuilder.writeTargetConfiguration(name: String, configuration: CargoTargetConfiguration, cargoToml: File) {
         writeTable("[$name]") {
-            writeField("name", configuration.name.orNull)
+            writeField("name", configuration.name.get().lowercase())
             writeField("path", configuration.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", configuration.test.orNull)
             writeBooleanField("doctest", configuration.doctest.orNull)
