@@ -18,7 +18,6 @@
 
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.internal.CargoTargettedTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
@@ -32,7 +31,7 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-abstract class CargoBench @Inject constructor(): CargoTargettedTask() {
+abstract class CargoBench @Inject constructor(): CargoRun() {
     @get:Input
     @get:Optional
     abstract val noRun: Property<Boolean>
@@ -45,6 +44,7 @@ abstract class CargoBench @Inject constructor(): CargoTargettedTask() {
 
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
+            remove("run")
             add("bench")
         }
     }
@@ -55,11 +55,11 @@ abstract class CargoBench @Inject constructor(): CargoTargettedTask() {
         if(noRun.getOrElse(false))
             args.add("--no-run")
 
-        if(noCapture.getOrElse(false))
-            args.add("--nocapture")
-
         if(noFailFast.getOrElse(false))
             args.add("--no-fail-fast")
+
+        if(noCapture.getOrElse(false))
+            arguments.add("--no-capture")
 
         return args
     }

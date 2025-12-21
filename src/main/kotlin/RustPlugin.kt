@@ -27,8 +27,7 @@ import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustManifestOptions
-import asia.hombre.neorust.options.RustManifestOptions.Package
+import asia.hombre.neorust.options.RustPackageOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
@@ -41,6 +40,7 @@ import asia.hombre.neorust.serializable.RustCrateObject
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
 import asia.hombre.neorust.task.CargoPublish
+import asia.hombre.neorust.task.CargoRun
 import asia.hombre.neorust.task.CargoTest
 import org.gradle.api.Action
 import org.gradle.api.IllegalDependencyNotation
@@ -79,16 +79,18 @@ internal fun CargoDefaultTask.setDefaultProperties() {
 }
 
 internal fun CargoTargettedTask.setTargettedProperties() {
-    lib.convention(ext.rustBuildTargetOptions.lib)
     bin.set(ext.rustBuildTargetOptions.bin)
-    bins.convention(ext.rustBuildTargetOptions.bins)
     example.set(ext.rustBuildTargetOptions.example)
-    examples.convention(ext.rustBuildTargetOptions.examples)
-    test.set(ext.rustBuildTargetOptions.test)
-    tests.convention(ext.rustBuildTargetOptions.tests)
-    bench.set(ext.rustBuildTargetOptions.bench)
-    benches.convention(ext.rustBuildTargetOptions.benches)
-    allTargets.convention(ext.rustBuildTargetOptions.allTargets)
+    if(this !is CargoRun || this is CargoBench) {
+        lib.convention(ext.rustBuildTargetOptions.lib)
+        bins.convention(ext.rustBuildTargetOptions.bins)
+        examples.convention(ext.rustBuildTargetOptions.examples)
+        test.set(ext.rustBuildTargetOptions.test)
+        tests.convention(ext.rustBuildTargetOptions.tests)
+        bench.set(ext.rustBuildTargetOptions.bench)
+        benches.convention(ext.rustBuildTargetOptions.benches)
+        allTargets.convention(ext.rustBuildTargetOptions.allTargets)
+    }
 }
 
 internal fun CargoBench.setBenchProperties() {
@@ -122,12 +124,18 @@ internal fun CargoTest.setTestProperties() {
     testThreads.convention(ext.rustTestOptions.testThreads)
 }
 
+internal fun CargoRun.setRunProperties(configuration: BinaryConfiguration) {
+    arguments.convention(configuration.arguments)
+    environment.convention(configuration.environment)
+    workingDir.convention(configuration.workingDir)
+}
+
 /**
  * Modify the Cargo crate manifest
  */
 @Suppress("unused")
-fun RustExtension.manifest(rustManifestOptions: Action<RustManifestOptions>) {
-    rustManifestOptions.execute(this.rustManifestOptions)
+fun RustExtension.manifest(rustPackageOptions: Action<RustPackageOptions>) {
+    rustPackageOptions.execute(this.rustPackageOptions)
 }
 
 /**
@@ -182,8 +190,8 @@ fun RustExtension.targets(rustBuildTargetOptions: Action<RustBuildTargetOptions>
  * Crate package configuration (Crate name, version, author, etc)
  */
 @Suppress("unused")
-fun RustManifestOptions.packaging(packageConfig: Action<Package>) {
-    packageConfig.execute(this.packageConfig.get())
+fun RustExtension.packaging(packageConfig: Action<RustPackageOptions>) {
+    packageConfig.execute(this.rustPackageOptions)
 }
 
 /**

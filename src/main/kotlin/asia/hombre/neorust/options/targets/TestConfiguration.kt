@@ -26,7 +26,7 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class TestConfiguration @Inject constructor(name: String): CargoTargetConfiguration(name) {
+abstract class TestConfiguration @Inject constructor(name: String): BinaryConfiguration(name) {
     override val SOURCE_DIRECTORY: String = "test"
 
     /**

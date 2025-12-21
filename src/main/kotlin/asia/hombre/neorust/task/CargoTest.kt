@@ -47,7 +47,7 @@ abstract class CargoTest @Inject constructor(): CargoBench() {
         val args: MutableList<String> = super.compileArgs() as MutableList<String>
 
         if(testThreads.isPresent)
-            args.add("--test-threads=${testThreads.get()}")
+            arguments.add("--test-threads ${testThreads.get()}")
 
         return args
     }

@@ -21,7 +21,7 @@ package asia.hombre.neorust.task
 import asia.hombre.neorust.CrateLibrary
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustManifestOptions
+import asia.hombre.neorust.options.RustPackageOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.targets.BenchmarkConfiguration
 import asia.hombre.neorust.options.targets.BinaryConfiguration
@@ -64,7 +64,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     @get:Nested
     internal abstract val crateLibrary: Property<CrateLibrary>
     @get:Nested
-    internal abstract val rustManifestOptions: Property<RustManifestOptions>
+    internal abstract val rustPackageOptions: Property<RustPackageOptions>
     @get:Nested
     internal abstract val rustProfileOptions: Property<RustProfileOptions>
     @get:Nested
@@ -105,8 +105,6 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         //Delete old Cargo.toml since it might be outdated.
         if(cargoToml.exists()) cargoToml.delete()
 
-        val manifestOptions = rustManifestOptions.get()
-
         val resolvedDir = resolvedCrates.get().asFile
 
         //Collect all crates to their own lists so we can append resolved crates
@@ -135,7 +133,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         }
 
         val content = StringBuilder()
-        val packageOptions = manifestOptions.packageConfig.get()
+        val packageOptions = rustPackageOptions.get()
 
         content.append(
             """
@@ -145,14 +143,12 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             """.trimIndent()
         )
 
-
         content.writeTable("package") {
             if(!packageOptions.name.isPresent)
                 throw IllegalArgumentException("Package 'name' cannot be unset.")
 
             writeField("name", packageOptions.name.get())
-            if(packageOptions.version.isPresent)
-                writeField("version", packageOptions.version.get())
+            writeField("version", packageOptions.version.get())
             if(packageOptions.authors.isPresent)
                 writeArrayField("authors", packageOptions.authors.get())
             if(packageOptions.edition.isPresent)
