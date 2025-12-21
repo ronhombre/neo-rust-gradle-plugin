@@ -34,7 +34,7 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class CargoTargetConfiguration @Inject constructor() {
+abstract class CargoTargetConfiguration @Inject constructor(name: String) {
     @Suppress("PropertyName")
     @get:Internal
     internal open val SOURCE_DIRECTORY = "undefined"
@@ -43,7 +43,6 @@ abstract class CargoTargetConfiguration @Inject constructor() {
     abstract val project: Project
 
     @get:Input
-    @get:Optional
     abstract val name: Property<String>
 
     @get:InputFile
@@ -86,6 +85,10 @@ abstract class CargoTargetConfiguration @Inject constructor() {
 
     @get:Internal
     var isEnabled = false
+
+    init {
+        this.name.convention(name)
+    }
 
     /**
      * An extremely flexible resolver for any `.rs` file for NRGP. This is not meant to be a public-facing API.

@@ -206,7 +206,14 @@ class Rust: Plugin<Project> {
                 setTargettedProperties()
                 setBuildProperties()
                 this.bin.addAll(target.provider {
-                    extension.rustBinaryOptions.list.get().map { it.name.get() }.toSet().asIterable()
+                    extension
+                        .binariesConfiguration
+                        .filterNot {
+                            extension.excludedBinaries.contains(it.name.get())
+                        }.map {
+                            it.name.get()
+                        }.toSet()
+                        .asIterable()
                 })
 
                 inputs.file(manifestPath)
@@ -272,7 +279,7 @@ class Rust: Plugin<Project> {
                 logger.error("Couldn't read the resolved Rust crates. Do we have the correct file permissions?", e)
                 null
             } catch (e: RuntimeException) {
-                logger.error("Corrupted resolved Rust crate detected and it has been deleted. Please re-run any task to re-generate it.", e)
+                logger.error("Corrupted resolved Rust crate detected and has been deleted. Please re-run any task to re-generate it.", e)
                 null
             } catch (e: Exception) {
                 logger.error("Unknown error encountered.", e)
@@ -526,17 +533,16 @@ class Rust: Plugin<Project> {
         return mainDirectory
             .asFile
             .listFiles()
+            .orEmpty()
             .filter { file -> file.extension == "rs" || (file.isDirectory && file.resolve("main.rs").isFile) }
     }
 
     private fun autoResolveBinaries(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "main").forEach { file ->
-            val configuration = project.objects.newInstance(BinaryConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                BinaryConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 
@@ -546,12 +552,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveTests(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "test").forEach { file ->
-            val configuration = project.objects.newInstance(TestConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                TestConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 
@@ -561,12 +565,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveBenchmarks(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "bench").forEach { file ->
-            val configuration = project.objects.newInstance(BenchmarkConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                BenchmarkConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 
@@ -576,12 +578,10 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveExamples(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "example").forEach { file ->
-            val configuration = project.objects.newInstance(ExampleConfiguration::class.java).apply {
-                if(file.name == "main.rs")
-                    name.set(project.name)
-                else
-                    name.set(file.name)
-
+            val configuration = project.objects.newInstance(
+                ExampleConfiguration::class.java,
+                if(file.name == "main.rs") project.name.lowercase() else file.name.lowercase()
+            ).apply {
                 path.set(file)
             }
 

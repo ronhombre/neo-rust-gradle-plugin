@@ -26,7 +26,7 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class LibraryConfiguration @Inject constructor(): CargoTargetConfiguration() {
+abstract class LibraryConfiguration @Inject constructor(name: String): CargoTargetConfiguration(name) {
     override val SOURCE_DIRECTORY: String = "library"
 
     /**
