@@ -23,7 +23,7 @@ import asia.hombre.neorust.options.RustBenchOptions
 import asia.hombre.neorust.options.RustBuildOptions
 import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustManifestOptions
+import asia.hombre.neorust.options.RustPackageOptions
 import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
@@ -189,8 +189,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
         RustBuildTargetOptions::class.java
     )
     @Internal
-    internal val rustManifestOptions: RustManifestOptions = objects.newInstance(
-        RustManifestOptions::class.java
+    internal val rustPackageOptions: RustPackageOptions = objects.newInstance(
+        RustPackageOptions::class.java
     )
     @Internal
     internal val rustBenchOptions: RustBenchOptions = objects.newInstance(

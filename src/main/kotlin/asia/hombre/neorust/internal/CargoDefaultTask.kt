@@ -37,6 +37,7 @@ import org.gradle.process.ExecOperations
 import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.absolutePathString
+import kotlin.time.measureTime
 
 /**
  * Any Cargo task needing the default Cargo configuration
@@ -148,6 +149,18 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     @get:Optional
     abstract val unstableFlags: ListProperty<String>
 
+    @get:Input
+    @get:Optional
+    abstract val arguments: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val workingDir: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val environment: MapProperty<String, String>
+
     @Internal
     internal open fun getInitialArgs(): List<String> {
         return mutableListOf("cargo")
@@ -178,7 +191,7 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
             args.add("--all-features")
 
         features.apply {
-            if(isPresent && !allFeatures.getOrElse(false) && this@CargoDefaultTask !is CargoClean)
+            if(isPresent && !allFeatures.getOrElse(false) && get().isNotEmpty() && this@CargoDefaultTask !is CargoClean)
                 args.addAll(listOf("--features", get().toSet().joinToString(" ")))
         }
 
@@ -238,8 +251,61 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     @TaskAction
     internal open fun cargoTaskAction() {
-        cmd.exec {
-            commandLine = compileArgs().also { println(it.joinToString(" ")) }
+        //Create the directory before running so Gradle can lock the directory
+        targetDirectory.get()
+            .asFile
+            .mkdirs()
+
+        val execTime = measureTime {
+            cmd.exec {
+                val execArgs = mutableListOf<String>()
+                val args = mutableListOf<String>()
+
+                execArgs.addAll(compileArgs())
+                args.addAll(this@CargoDefaultTask.arguments.get().toSet())
+
+                if(args.isNotEmpty()) {
+                    args.add(0, "--")
+
+                    if(execArgs[1] == "bench" || execArgs[1] == "test") {
+
+                        logger.warn("""
+                            [NRGP]
+                            Warning: Arguments found in Cargo Bench/Test
+                            ------------------------------------------------------
+                            Cargo behavior with arguments in this context does not work as you might expect.
+                            These arguments are passed directly to rustc and would not reach your test/bench.
+
+                            If your build fails or behaves unexpectedly:
+                              1. Consider removing the arguments.
+                              2. Consult the Rust documentation: https://doc.rust-lang.org/rustc/tests/index.html#cli-arguments
+                              3. Consider using environment variables, as they are not affected by this issue.
+
+                            (If you know what you are doing, you may ignore this message)
+                        """.trimIndent())
+                    }
+                }
+
+                commandLine(
+                    *execArgs.toTypedArray(),
+                    *args.toTypedArray()
+                )
+
+                println(commandLine.joinToString(" "))
+
+                environment(this@CargoDefaultTask.environment.get())
+
+                if (this@CargoDefaultTask.workingDir.isPresent) {
+                    workingDir(this@CargoDefaultTask.workingDir.get())
+                }
+
+                //Allow writing into std in when the run task is running
+                standardInput = System.`in`
+                standardOutput = System.out
+                errorOutput = System.err
+            }
         }
+
+        print("\nExecuting Cargo task took $execTime")
     }
 }

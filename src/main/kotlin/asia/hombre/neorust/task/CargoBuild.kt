@@ -21,13 +21,10 @@ package asia.hombre.neorust.task
 import asia.hombre.neorust.internal.CargoTargettedTask
 import asia.hombre.neorust.option.CargoMessageFormat
 import asia.hombre.neorust.option.CargoTiming
-import org.gradle.api.file.Directory
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputDirectory
 import javax.inject.Inject
 
 /**
@@ -66,22 +63,6 @@ abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     @get:Input
     @get:Optional
     abstract val futureIncompatReport: Property<Boolean>
-
-    @get:OutputDirectory
-    @get:Optional
-    abstract val outputTargetDirectory: DirectoryProperty
-
-    init {
-        outputTargetDirectory.convention(
-            project.provider<Directory> {
-                if(release.getOrElse(false)) {
-                    targetDirectory.dir("release")
-                } else {
-                    targetDirectory.dir("debug")
-                }.get()
-            }
-        )
-    }
 
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
