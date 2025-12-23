@@ -27,7 +27,8 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class BenchmarkConfiguration @Inject constructor(name: String): BinaryConfiguration(name) {
-    override val SOURCE_DIRECTORY: String = "bench"
+    override val SOURCE_DIRECTORY: String
+        get() = "bench"
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.

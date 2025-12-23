@@ -29,12 +29,16 @@ import asia.hombre.neorust.options.RustPublishOptions
 import asia.hombre.neorust.options.RustTestOptions
 import asia.hombre.neorust.options.targets.BenchmarkConfiguration
 import asia.hombre.neorust.options.targets.BinaryConfiguration
+import asia.hombre.neorust.options.targets.CargoTargetConfiguration
 import asia.hombre.neorust.options.targets.ExampleConfiguration
 import asia.hombre.neorust.options.targets.LibraryConfiguration
 import asia.hombre.neorust.options.targets.TestConfiguration
+import org.gradle.api.GradleException
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -55,6 +59,10 @@ import javax.inject.Inject
  */
 @Suppress("unused")
 abstract class RustExtension @Inject constructor(project: Project) {
+    @Internal
+    internal val projectName: String = project.name
+    @Internal
+    internal val logger: Logger = project.logger
     @Internal
     internal val objects: ObjectFactory = project.objects
 
@@ -224,20 +232,42 @@ abstract class RustExtension @Inject constructor(project: Project) {
         project.name
     )
     @Internal
-    internal val binariesConfiguration: MutableList<BinaryConfiguration> = mutableListOf()
+    internal val binariesConfiguration: NamedDomainObjectContainer<BinaryConfiguration> = objects.safeDomainObjectContainer()
     @Internal
-    internal val examplesConfiguration: MutableList<ExampleConfiguration> = mutableListOf()
+    internal val examplesConfiguration: NamedDomainObjectContainer<ExampleConfiguration> = objects.safeDomainObjectContainer()
     @Internal
-    internal val testsConfiguration: MutableList<TestConfiguration> = mutableListOf()
+    internal val testsConfiguration: NamedDomainObjectContainer<TestConfiguration> = objects.safeDomainObjectContainer()
     @Internal
-    internal val benchmarksConfiguration: MutableList<BenchmarkConfiguration> = mutableListOf()
+    internal val benchmarksConfiguration: NamedDomainObjectContainer<BenchmarkConfiguration> = objects.safeDomainObjectContainer()
 
-    @Internal
-    internal val excludedBinaries: MutableList<String> = mutableListOf()
-    @Internal
-    internal val excludedExamples: MutableList<String> = mutableListOf()
-    @Internal
-    internal val excludedTests: MutableList<String> = mutableListOf()
-    @Internal
-    internal val excludedBenchmarks: MutableList<String> = mutableListOf()
+    private inline fun <reified T : CargoTargetConfiguration> ObjectFactory.safeDomainObjectContainer(): NamedDomainObjectContainer<T> {
+        return this.domainObjectContainer(T::class.java) { name ->
+            //What the fuck, Gradle!
+            try {
+                this.newInstance(T::class.java, name)
+            } catch (e: Exception) {
+                //Unwraps the actual Exception and fallbacks to the current Exception
+                val error = e.cause?: e
+                //Only by calling logger.error(..) does Gradle actually stop the task. Otherwise, it absorbs the error
+                logger.error(error.message, error)
+                throw GradleException("Could not create ${T::class.simpleName} '$name'", error)
+            }
+        }
+    }
+
+    fun binaries(action: NamedDomainObjectContainer<BinaryConfiguration>.() -> Unit) {
+        action(binariesConfiguration)
+    }
+
+    fun tests(action: NamedDomainObjectContainer<TestConfiguration>.() -> Unit) {
+        action(testsConfiguration)
+    }
+
+    fun benchmarks(action: NamedDomainObjectContainer<BenchmarkConfiguration>.() -> Unit) {
+        action(benchmarksConfiguration)
+    }
+
+    fun examples(action: NamedDomainObjectContainer<ExampleConfiguration>.() -> Unit) {
+        action(examplesConfiguration)
+    }
 }

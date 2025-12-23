@@ -33,7 +33,8 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class BinaryConfiguration @Inject constructor(name: String): CargoTargetConfiguration(name) {
-    override val SOURCE_DIRECTORY: String = "main"
+    override val SOURCE_DIRECTORY: String
+        get() = "main"
 
     @get:Input
     abstract val buildProfile: Property<BuildProfile>

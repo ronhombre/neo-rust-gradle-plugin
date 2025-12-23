@@ -18,7 +18,6 @@
 
 
 import asia.hombre.neorust.CrateLibrary
-import asia.hombre.neorust.exception.DuplicateTargetException
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.internal.CargoTargettedTask
@@ -44,16 +43,17 @@ import asia.hombre.neorust.task.CargoRun
 import asia.hombre.neorust.task.CargoTest
 import org.gradle.api.Action
 import org.gradle.api.IllegalDependencyNotation
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.file.RegularFile
 import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
+import org.gradle.kotlin.dsl.get
 import java.io.File
 import java.io.FileInputStream
 import java.io.ObjectInputStream
-import java.util.*
 
 internal fun CargoDefaultTask.setDefaultProperties() {
     packageSelect.convention(ext.packageSelect)
@@ -207,123 +207,47 @@ fun RustExtension.library(libraryConfig: Action<LibraryConfiguration>) {
 }
 
 /**
- * Configure a new binary Cargo target
+ * Exclude a binary or more from the build with the specific name
  */
 @Suppress("unused")
-fun RustExtension.binary(name: String, binaryConfig: Action<BinaryConfiguration>? = null) {
-    val potentialConflict = this.binariesConfiguration.find { it.name.get().equals(name, ignoreCase = true) }
-
-    when (potentialConflict?.isEnabled) {
-        true -> throw DuplicateTargetException("`binary {}` parameter `name` must be unique! $name has already been declared.")
-        false -> {
-            binaryConfig?.execute(potentialConflict)
-            potentialConflict.isEnabled = true
-        }
-        else -> {
-            val binary = objects.newInstance(BinaryConfiguration::class.java, name)
-            binaryConfig?.execute(binary)
-            binary.isEnabled = true
-            this.binariesConfiguration.add(binary)
-        }
+@JvmName("excludeBinary")
+fun NamedDomainObjectContainer<BinaryConfiguration>.exclude(vararg name: String) {
+    name.forEach {
+        this[it].isExcluded = true
     }
 }
 
 /**
- * Exclude a binary from the build with the specific name
+ * Exclude an example or more from the build with the specific name
  */
 @Suppress("unused")
-fun RustExtension.excludeBinary(name: String) {
-    this.excludedBinaries.add(name)
-}
-
-/**
- * Configure a new example Cargo target
- */
-@Suppress("unused")
-fun RustExtension.example(name: String, exampleConfig: Action<ExampleConfiguration>? = null) {
-    val potentialConflict = this.examplesConfiguration.find { it.name.get().equals(name, ignoreCase = true) }
-
-    when (potentialConflict?.isEnabled) {
-        true -> throw DuplicateTargetException("`example {}` parameter `name` must be unique! $name has already been declared.")
-        false -> {
-            exampleConfig?.execute(potentialConflict)
-            potentialConflict.isEnabled = true
-        }
-        else -> {
-            val example = objects.newInstance(ExampleConfiguration::class.java, name)
-            exampleConfig?.execute(example)
-            example.isEnabled = true
-            this.examplesConfiguration.add(example)
-        }
+@JvmName("excludeExample")
+fun NamedDomainObjectContainer<ExampleConfiguration>.exclude(vararg name: String) {
+    name.forEach {
+        this[it].isExcluded = true
     }
 }
 
 /**
- * Exclude an example from the build with the specific name
+ * Exclude a test or more from the build with the specific name
  */
 @Suppress("unused")
-fun RustExtension.excludeExample(name: String) {
-    this.excludedExamples.add(name)
-}
-
-/**
- * Configure a new test Cargo target
- */
-@Suppress("unused")
-fun RustExtension.test(name: String, testConfig: Action<TestConfiguration>? = null) {
-    val potentialConflict = this.testsConfiguration.find { it.name.get().equals(name, ignoreCase = true) }
-
-    when (potentialConflict?.isEnabled) {
-        true -> throw DuplicateTargetException("`test {}` parameter `name` must be unique! $name has already been declared.")
-        false -> {
-            testConfig?.execute(potentialConflict)
-            potentialConflict.isEnabled = true
-        }
-        else -> {
-            val test = objects.newInstance(TestConfiguration::class.java, name)
-            testConfig?.execute(test)
-            test.isEnabled = true
-            this.testsConfiguration.add(test)
-        }
+@JvmName("excludeTest")
+fun NamedDomainObjectContainer<TestConfiguration>.exclude(vararg name: String) {
+    name.forEach {
+        this[it].isExcluded = true
     }
 }
 
 /**
- * Exclude a test from the build with the specific name
+ * Exclude a bench or more from the build with the specific name
  */
 @Suppress("unused")
-fun RustExtension.excludeTest(name: String) {
-    this.excludedTests.add(name)
-}
-
-/**
- * Configure a new bench Cargo target
- */
-@Suppress("unused")
-fun RustExtension.bench(name: String, benchConfig: Action<BenchmarkConfiguration>? = null) {
-    val potentialConflict = this.benchmarksConfiguration.find { it.name.get().equals(name, ignoreCase = true) }
-
-    when (potentialConflict?.isEnabled) {
-        true -> throw DuplicateTargetException("`bench {}` parameter `name` must be unique! $name has already been declared.")
-        false -> {
-            benchConfig?.execute(potentialConflict)
-            potentialConflict.isEnabled = true
-        }
-        else -> {
-            val bench = objects.newInstance(BenchmarkConfiguration::class.java, name)
-            benchConfig?.execute(bench)
-            bench.isEnabled = true
-            this.benchmarksConfiguration.add(bench)
-        }
+@JvmName("excludeBenchmark")
+fun NamedDomainObjectContainer<BenchmarkConfiguration>.exclude(vararg name: String) {
+    name.forEach {
+        this[it].isExcluded = true
     }
-}
-
-/**
- * Exclude a bench from the build with the specific name
- */
-@Suppress("unused")
-fun RustExtension.excludeBenchmark(name: String) {
-    this.excludedBenchmarks.add(name)
 }
 
 /**
