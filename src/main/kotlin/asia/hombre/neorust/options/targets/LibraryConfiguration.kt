@@ -27,7 +27,8 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class LibraryConfiguration @Inject constructor(name: String): CargoTargetConfiguration(name) {
-    override val SOURCE_DIRECTORY: String = "library"
+    override val SOURCE_DIRECTORY: String
+        get() = "library"
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.

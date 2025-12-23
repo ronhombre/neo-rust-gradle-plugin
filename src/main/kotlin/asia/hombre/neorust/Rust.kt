@@ -21,10 +21,7 @@ package asia.hombre.neorust
 import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.internal.CargoDefaultTask
 import asia.hombre.neorust.options.RustCrateOptions
-import asia.hombre.neorust.options.targets.BenchmarkConfiguration
 import asia.hombre.neorust.options.targets.BinaryConfiguration
-import asia.hombre.neorust.options.targets.ExampleConfiguration
-import asia.hombre.neorust.options.targets.TestConfiguration
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
 import asia.hombre.neorust.task.CargoCheck
@@ -124,13 +121,9 @@ class Rust: Plugin<Project> {
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 libraryConfiguration.set(extension.libraryConfiguration)
                 binaryConfiguration.set(extension.binariesConfiguration)
-                excludedBinaries.set(extension.excludedBinaries)
                 exampleConfiguration.set(extension.examplesConfiguration)
-                excludedExamples.set(extension.excludedExamples)
                 testConfiguration.set(extension.testsConfiguration)
-                excludedTests.set(extension.excludedTests)
                 benchmarkConfiguration.set(extension.benchmarksConfiguration)
-                excludedBenchmarks.set(extension.excludedBenchmarks)
                 this.crateLibrary.set(crateLibrary)
                 featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)
@@ -192,7 +185,6 @@ class Rust: Plugin<Project> {
         if(extension.autoTests.get()) autoResolveTests(target, extension)
         if(extension.autoBenches.get()) autoResolveBenchmarks(target, extension)
         if(extension.autoExamples.get()) autoResolveExamples(target, extension)
-
 
         target.afterEvaluate {
             extension.rustPackageOptions.apply {
@@ -282,7 +274,7 @@ class Rust: Plugin<Project> {
             extension
                 .binariesConfiguration
                 .filterNot {
-                    extension.excludedBinaries.contains(it.name.get())
+                    it.isExcluded
                 }.forEach { config ->
                     target.addBuildTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                     target.addRunTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
@@ -291,7 +283,7 @@ class Rust: Plugin<Project> {
             extension
                 .examplesConfiguration
                 .filterNot {
-                    extension.excludedExamples.contains(it.name.get())
+                    it.isExcluded
                 }.forEach { config ->
                     target.addRunTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
@@ -299,7 +291,7 @@ class Rust: Plugin<Project> {
             extension
                 .testsConfiguration
                 .filterNot {
-                    extension.excludedTests.contains(it.name.get())
+                    it.isExcluded
                 }.forEach { config ->
                     target.addTestTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
@@ -307,7 +299,7 @@ class Rust: Plugin<Project> {
             extension
                 .benchmarksConfiguration
                 .filterNot {
-                    extension.excludedBenchmarks.contains(it.name.get())
+                    it.isExcluded
                 }.forEach { config ->
                     target.addBenchTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
@@ -370,13 +362,11 @@ class Rust: Plugin<Project> {
         extension: RustExtension,
         configuration: BinaryConfiguration
     ) {
-        val lowercaseTargetName = configuration.name.get().lowercase()
         //Dev
         configureAsIndependentBuild(
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             false
         )
@@ -385,7 +375,6 @@ class Rust: Plugin<Project> {
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             true
         )
@@ -397,13 +386,11 @@ class Rust: Plugin<Project> {
         extension: RustExtension,
         configuration: BinaryConfiguration
     ) {
-        val lowercaseTargetName = configuration.name.get().lowercase()
         //Dev
         configureAsIndependentRun(
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             false
         )
@@ -412,7 +399,6 @@ class Rust: Plugin<Project> {
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             true
         )
@@ -424,13 +410,11 @@ class Rust: Plugin<Project> {
         extension: RustExtension,
         configuration: BinaryConfiguration
     ) {
-        val lowercaseTargetName = configuration.name.get().lowercase()
         //Dev
         configureAsIndependentBench(
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             false
         )
@@ -442,13 +426,11 @@ class Rust: Plugin<Project> {
         extension: RustExtension,
         configuration: BinaryConfiguration
     ) {
-        val lowercaseTargetName = configuration.name.get().lowercase()
         //Dev
         configureAsIndependentTest(
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             false
         )
@@ -457,7 +439,6 @@ class Rust: Plugin<Project> {
             buffer,
             gradleRustDependencies,
             extension,
-            lowercaseTargetName,
             configuration,
             true
         )
@@ -467,20 +448,19 @@ class Rust: Plugin<Project> {
         buffer: ByteArray,
         gradleRustDependencies: List<RustCrateOptions>?,
         extension: RustExtension,
-        name: String,
         configuration: BinaryConfiguration,
         release: Boolean
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "build" + name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                "build" + configuration.name.uppercaseFirstChar() + if(release) "Release" else "Dev",
                 CargoBuild::class.java
             )
 
             task.configure {
                 dependsOn("generateCargoManifest")
                 group = "build"
-                description = "Build '$name' Binary as " + if(release) "release." else "dev."
+                description = "Build '${configuration.actualName}' Binary as " + if(release) "release." else "dev."
 
                 this.ext = extension
                 setDefaultProperties()
@@ -493,7 +473,7 @@ class Rust: Plugin<Project> {
                 //Get off the Global properties
                 this.bin.set(mutableListOf())
 
-                this.bin.add(configuration.name.get())
+                this.bin.add(configuration.actualName)
 
                 inputs.file(manifestPath)
 
@@ -508,20 +488,19 @@ class Rust: Plugin<Project> {
         buffer: ByteArray,
         gradleRustDependencies: List<RustCrateOptions>?,
         extension: RustExtension,
-        name: String,
         configuration: BinaryConfiguration,
         release: Boolean
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "run" + name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                "run" + configuration.name.uppercaseFirstChar() + if(release) "Release" else "Dev",
                 CargoRun::class.java
             )
 
             task.configure {
                 dependsOn("generateCargoManifest")
                 group = "application"
-                description = "Run '$name' Binary as " + if(release) "release." else "dev."
+                description = "Run '${configuration.actualName}' Binary as " + if(release) "release." else "dev."
 
                 this.ext = extension
                 setDefaultProperties()
@@ -535,7 +514,7 @@ class Rust: Plugin<Project> {
                 //Get off the Global properties
                 this.bin.set(mutableListOf())
 
-                this.bin.add(configuration.name.get())
+                this.bin.add(configuration.actualName)
 
                 inputs.file(manifestPath)
 
@@ -550,20 +529,19 @@ class Rust: Plugin<Project> {
         buffer: ByteArray,
         gradleRustDependencies: List<RustCrateOptions>?,
         extension: RustExtension,
-        name: String,
         configuration: BinaryConfiguration,
         release: Boolean
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "bench" + name.uppercaseFirstChar(),
+                "bench" + configuration.name.uppercaseFirstChar(),
                 CargoBench::class.java
             )
 
             task.configure {
                 dependsOn("generateCargoManifest")
                 group = "verification"
-                description = "Benchmark '$name'"
+                description = "Benchmark '${configuration.actualName}'"
 
                 this.ext = extension
                 setDefaultProperties()
@@ -580,7 +558,7 @@ class Rust: Plugin<Project> {
                 this.test.set(mutableListOf())
                 this.bench.set(mutableListOf())
 
-                this.bench.add(configuration.name.get())
+                this.bench.add(configuration.actualName)
 
                 inputs.file(manifestPath)
 
@@ -595,20 +573,19 @@ class Rust: Plugin<Project> {
         buffer: ByteArray,
         gradleRustDependencies: List<RustCrateOptions>?,
         extension: RustExtension,
-        name: String,
         configuration: BinaryConfiguration,
         release: Boolean
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "test" + name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                "test" + configuration.name.uppercaseFirstChar() + if(release) "Release" else "Dev",
                 CargoTest::class.java
             )
 
             task.configure {
                 dependsOn("generateCargoManifest")
                 group = "verification"
-                description = "Test '$name' as " + if(release) "release." else "dev."
+                description = "Test '${configuration.actualName}' as " + if(release) "release." else "dev."
 
                 this.ext = extension
                 setDefaultProperties()
@@ -626,7 +603,7 @@ class Rust: Plugin<Project> {
                 this.test.set(mutableListOf())
                 this.bench.set(mutableListOf())
 
-                this.test.add(configuration.name.get())
+                this.test.add(configuration.actualName)
 
                 inputs.file(manifestPath)
 
@@ -708,53 +685,33 @@ class Rust: Plugin<Project> {
 
     private fun autoResolveBinaries(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "main").forEach { file ->
-            val configuration = project.objects.newInstance(
-                BinaryConfiguration::class.java,
-                if(file.name == "main.rs") project.name.lowercase() else file.nameWithoutExtension.lowercase()
-            ).apply {
+            extension.binariesConfiguration.register(file.nameWithoutExtension.lowercase()) {
                 path.set(file)
             }
-
-            extension.binariesConfiguration.add(configuration)
         }
     }
 
     private fun autoResolveTests(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "test").forEach { file ->
-            val configuration = project.objects.newInstance(
-                TestConfiguration::class.java,
-                if(file.name == "main.rs") project.name.lowercase() else file.nameWithoutExtension.lowercase()
-            ).apply {
+            extension.testsConfiguration.register(file.nameWithoutExtension.lowercase()) {
                 path.set(file)
             }
-
-            extension.testsConfiguration.add(configuration)
         }
     }
 
     private fun autoResolveBenchmarks(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "bench").forEach { file ->
-            val configuration = project.objects.newInstance(
-                BenchmarkConfiguration::class.java,
-                if(file.name == "main.rs") project.name.lowercase() else file.nameWithoutExtension.lowercase()
-            ).apply {
+            extension.benchmarksConfiguration.register(file.nameWithoutExtension.lowercase()) {
                 path.set(file)
             }
-
-            extension.benchmarksConfiguration.add(configuration)
         }
     }
 
     private fun autoResolveExamples(project: Project, extension: RustExtension) {
         resolveMainRustFiles(project.layout, "example").forEach { file ->
-            val configuration = project.objects.newInstance(
-                ExampleConfiguration::class.java,
-                if(file.name == "main.rs") project.name.lowercase() else file.nameWithoutExtension.lowercase()
-            ).apply {
+            extension.examplesConfiguration.register(file.nameWithoutExtension.lowercase()) {
                 path.set(file)
             }
-
-            extension.examplesConfiguration.add(configuration)
         }
     }
 

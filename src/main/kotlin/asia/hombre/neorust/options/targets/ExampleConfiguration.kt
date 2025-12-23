@@ -27,7 +27,8 @@ import javax.inject.Inject
  * @author Ron Lauren Hombre
  */
 abstract class ExampleConfiguration @Inject constructor(name: String): BinaryConfiguration(name) {
-    override val SOURCE_DIRECTORY: String = "example"
+    override val SOURCE_DIRECTORY: String
+        get() = "example"
 
     /**
      * Attempts to resolve a `.rs` file as the `path` for this Cargo target.

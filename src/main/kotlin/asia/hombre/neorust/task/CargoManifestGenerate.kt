@@ -75,20 +75,12 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val libraryConfiguration: Property<LibraryConfiguration>
     @get:Nested
     internal abstract val binaryConfiguration: ListProperty<BinaryConfiguration>
-    @get:Input
-    internal abstract val excludedBinaries: ListProperty<String>
     @get:Nested
     internal abstract val exampleConfiguration: ListProperty<ExampleConfiguration>
-    @get:Input
-    internal abstract val excludedExamples: ListProperty<String>
     @get:Nested
     internal abstract val testConfiguration: ListProperty<TestConfiguration>
-    @get:Input
-    internal abstract val excludedTests: ListProperty<String>
     @get:Nested
     internal abstract val benchmarkConfiguration: ListProperty<BenchmarkConfiguration>
-    @get:Input
-    internal abstract val excludedBenchmarks: ListProperty<String>
 
     @get:Input
     internal abstract val featuresList: MapProperty<String, List<String>>
@@ -266,7 +258,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         val rustLibraryOptions = libraryConfiguration.get()
 
         if(rustLibraryOptions.path.isPresent) content.writeTable("lib") {
-            writeField("name", rustLibraryOptions.name.get().lowercase())
+            writeField("name", rustLibraryOptions.actualName)
             writeField("path", rustLibraryOptions.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", rustLibraryOptions.test.orNull)
             writeBooleanField("doctest", rustLibraryOptions.doctest.orNull)
@@ -279,37 +271,25 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             writeArrayField("required-features", rustLibraryOptions.requiredFeatures.get())
         }
 
-        val rustBinariesOptions = binaryConfiguration.get()
-        val excludedBinariesList = excludedBinaries.get()
-
-        excludedBinariesList.forEach { binary -> rustBinariesOptions.removeIf { it.name.get() == binary }}
+        val rustBinariesOptions = binaryConfiguration.get().filterNot { it.isExcluded }
 
         rustBinariesOptions.forEach { binary ->
             content.writeTargetConfiguration("bin", binary, cargoToml)
         }
 
-        val rustExamplesOptions = exampleConfiguration.get()
-        val excludedExamplesList = excludedExamples.get()
-
-        excludedExamplesList.forEach { example -> rustExamplesOptions.removeIf { it.name.get() == example }}
+        val rustExamplesOptions = exampleConfiguration.get().filterNot { it.isExcluded }
 
         rustExamplesOptions.forEach { example ->
             content.writeTargetConfiguration("example", example, cargoToml)
         }
 
-        val rustTestsOptions = testConfiguration.get()
-        val excludedTestsList = excludedTests.get()
-
-        excludedTestsList.forEach { test -> rustTestsOptions.removeIf { it.name.get() == test }}
+        val rustTestsOptions = testConfiguration.get().filterNot { it.isExcluded }
 
         rustTestsOptions.forEach { test ->
             content.writeTargetConfiguration("test", test, cargoToml)
         }
 
-        val rustBenchOptions = benchmarkConfiguration.get()
-        val excludedBenchList = excludedBenchmarks.get()
-
-        excludedBenchList.forEach { bench -> rustBenchOptions.removeIf { it.name.get() == bench }}
+        val rustBenchOptions = benchmarkConfiguration.get().filterNot { it.isExcluded }
 
         rustBenchOptions.forEach { bench ->
             content.writeTargetConfiguration("bench", bench, cargoToml)
@@ -334,7 +314,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
 
     private fun StringBuilder.writeTargetConfiguration(name: String, configuration: CargoTargetConfiguration, cargoToml: File) {
         writeTable("[$name]") {
-            writeField("name", configuration.name.get().lowercase())
+            writeField("name", configuration.actualName)
             writeField("path", configuration.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", configuration.test.orNull)
             writeBooleanField("doctest", configuration.doctest.orNull)

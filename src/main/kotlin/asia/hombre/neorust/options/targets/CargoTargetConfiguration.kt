@@ -18,7 +18,9 @@
 
 package asia.hombre.neorust.options.targets
 
+import org.gradle.api.Named
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -26,6 +28,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -34,16 +37,17 @@ import javax.inject.Inject
  * @since 0.6.0
  * @author Ron Lauren Hombre
  */
-abstract class CargoTargetConfiguration @Inject constructor(name: String) {
+abstract class CargoTargetConfiguration @Inject constructor(private val internalName: String): Named {
     @Suppress("PropertyName")
     @get:Internal
-    internal open val SOURCE_DIRECTORY = "undefined"
+    internal open val SOURCE_DIRECTORY: String
+        get() = "undefined"
+
+    @get:Internal
+    internal val actualName: String = if(name == "main") project.name.lowercase() else name
 
     @get:Inject
     abstract val project: Project
-
-    @get:Input
-    abstract val name: Property<String>
 
     @get:InputFile
     @get:Optional
@@ -84,23 +88,44 @@ abstract class CargoTargetConfiguration @Inject constructor(name: String) {
     abstract val buildFeatures: ListProperty<String>
 
     @get:Internal
-    var isEnabled = false
+    internal var isEnabled = false
+
+    @get:Internal
+    internal var isExcluded = false
+
+    @get:Internal
+    internal val currentDirectory: Directory = project
+        .layout
+        .projectDirectory
+        .dir("src")
+        .dir(SOURCE_DIRECTORY)
+        .dir("rust")
 
     init {
-        this.name.convention(name)
+        if(this is LibraryConfiguration && tryResolve("lib.rs")) {
+            //DO NOTHING
+        } else if(!tryResolve("$name.rs") && !tryResolve(name, "main.rs")) {
+            val type = this.javaClass.name.substringAfterLast(".").substringBefore("Configuration")
+            val errorMessage = "Target with type $type and name $name cannot be found at the expected location: '${currentDirectory.asFile.path}' as $name.rs or $name${File.separator}main.rs"
+            throw IllegalArgumentException(errorMessage)
+        }
+    }
+
+    open fun resolve(vararg paths: String): Boolean {
+        if(!tryResolve(*paths)) {
+            project.logger.error("${paths.joinToString(File.separator)} could not be resolved and has not been applied. It does not exist or we don't have permission to read it.")
+
+            return false
+        }
+
+        return true
     }
 
     /**
      * An extremely flexible resolver for any `.rs` file for NRGP. This is not meant to be a public-facing API.
      */
-    open fun resolve(vararg paths: String): Boolean {
-        var currentDirectory = project
-            .layout
-            .projectDirectory
-            .dir("src")
-            .dir(SOURCE_DIRECTORY)
-            .dir("rust")
-
+    private fun tryResolve(vararg paths: String): Boolean {
+        var currentDirectory = currentDirectory
         paths.forEachIndexed { index, path ->
             if(index != paths.lastIndex) currentDirectory = currentDirectory.dir(path)
         }
@@ -108,8 +133,7 @@ abstract class CargoTargetConfiguration @Inject constructor(name: String) {
         val finalFilePath = currentDirectory.file(paths.last())
 
         if(!finalFilePath.asFile.exists()) {
-            project.logger.error("${finalFilePath.asFile.path} could not be resolved and has not been applied. It does not exist or we don't have permission to read it.")
-
+            println(false)
             return false
         }
 
@@ -117,4 +141,7 @@ abstract class CargoTargetConfiguration @Inject constructor(name: String) {
 
         return true
     }
+
+    @Internal
+    override fun getName(): String = internalName.lowercase()
 }
