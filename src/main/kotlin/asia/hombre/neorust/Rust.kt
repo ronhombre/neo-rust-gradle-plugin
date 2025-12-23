@@ -249,7 +249,7 @@ class Rust: Plugin<Project> {
             tryRegisterTask {
                 target.tasks.register(benchTask, CargoBench::class.java) {
                     dependsOn("generateCargoManifest")
-                    group = "build"
+                    group = "verification"
                     this.ext = extension
                     setDefaultProperties()
                     setTargettedProperties()
@@ -266,7 +266,7 @@ class Rust: Plugin<Project> {
             tryRegisterTask {
                 target.tasks.register(testTask, CargoTest::class.java) {
                     dependsOn("generateCargoManifest")
-                    group = "test"
+                    group = "verification"
                     this.ext = extension
                     setDefaultProperties()
                     setTargettedProperties()
@@ -284,6 +284,7 @@ class Rust: Plugin<Project> {
                 .filterNot {
                     extension.excludedBinaries.contains(it.name.get())
                 }.forEach { config ->
+                    target.addBuildTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                     target.addRunTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
 
@@ -363,6 +364,33 @@ class Rust: Plugin<Project> {
         }
     }
 
+    private fun Project.addBuildTaskForTarget(
+        buffer: ByteArray,
+        gradleRustDependencies: List<RustCrateOptions>?,
+        extension: RustExtension,
+        configuration: BinaryConfiguration
+    ) {
+        val lowercaseTargetName = configuration.name.get().lowercase()
+        //Dev
+        configureAsIndependentBuild(
+            buffer,
+            gradleRustDependencies,
+            extension,
+            lowercaseTargetName,
+            configuration,
+            false
+        )
+        //Release
+        configureAsIndependentBuild(
+            buffer,
+            gradleRustDependencies,
+            extension,
+            lowercaseTargetName,
+            configuration,
+            true
+        )
+    }
+
     private fun Project.addRunTaskForTarget(
         buffer: ByteArray,
         gradleRustDependencies: List<RustCrateOptions>?,
@@ -435,6 +463,47 @@ class Rust: Plugin<Project> {
         )
     }
 
+    private fun Project.configureAsIndependentBuild(
+        buffer: ByteArray,
+        gradleRustDependencies: List<RustCrateOptions>?,
+        extension: RustExtension,
+        name: String,
+        configuration: BinaryConfiguration,
+        release: Boolean
+    ) {
+        tryRegisterTask {
+            val task = this.tasks.register(
+                "build" + name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                CargoBuild::class.java
+            )
+
+            task.configure {
+                dependsOn("generateCargoManifest")
+                group = "build"
+                description = "Build '$name' Binary as " + if(release) "release." else "dev."
+
+                this.ext = extension
+                setDefaultProperties()
+                setTargettedProperties()
+                setBuildProperties()
+
+                this.release.set(release)
+                this.features.addAll(configuration.buildFeatures.get())
+
+                //Get off the Global properties
+                this.bin.set(mutableListOf())
+
+                this.bin.add(configuration.name.get())
+
+                inputs.file(manifestPath)
+
+                doNotTrackState("Build task must run on demand")
+            }
+
+            return@tryRegisterTask task.get()
+        } as CargoBuild
+    }
+
     private fun Project.configureAsIndependentRun(
         buffer: ByteArray,
         gradleRustDependencies: List<RustCrateOptions>?,
@@ -451,8 +520,8 @@ class Rust: Plugin<Project> {
 
             task.configure {
                 dependsOn("generateCargoManifest")
-                group = "build"
-                description = "Build '$name' Binary as " + if(release) "release." else "dev."
+                group = "application"
+                description = "Run '$name' Binary as " + if(release) "release." else "dev."
 
                 this.ext = extension
                 setDefaultProperties()
@@ -493,7 +562,7 @@ class Rust: Plugin<Project> {
 
             task.configure {
                 dependsOn("generateCargoManifest")
-                group = "test"
+                group = "verification"
                 description = "Benchmark '$name'"
 
                 this.ext = extension
@@ -519,7 +588,7 @@ class Rust: Plugin<Project> {
             }
 
             return@tryRegisterTask task.get()
-        } as CargoRun
+        } as CargoBench
     }
 
     private fun Project.configureAsIndependentTest(
@@ -538,7 +607,7 @@ class Rust: Plugin<Project> {
 
             task.configure {
                 dependsOn("generateCargoManifest")
-                group = "test"
+                group = "verification"
                 description = "Test '$name' as " + if(release) "release." else "dev."
 
                 this.ext = extension
