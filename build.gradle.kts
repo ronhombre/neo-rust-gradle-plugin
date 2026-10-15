@@ -1,8 +1,9 @@
+import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 
 plugins {
     `kotlin-dsl`
-    id("com.gradle.plugin-publish") version "2.0.0"
+    id("com.gradle.plugin-publish") version "2.2.1"
     id("maven-publish")
     id("org.jetbrains.dokka")  version "2.1.0" //KDocs
     id("org.jetbrains.dokka-javadoc") version "2.1.0"
@@ -42,6 +43,11 @@ gradlePlugin {
             description = project.description
             displayName = officialName
             tags.set(listOf("rust", "cargo"))
+            compatibility {
+                features {
+                    configurationCache = true
+                }
+            }
         }
     }
 }
