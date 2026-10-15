@@ -180,7 +180,7 @@ fun RustExtension.library(libraryConfig: Action<LibraryConfiguration>) {
         throw IllegalArgumentException("`library {}` should only be configured once!")
     }
     this.libraryConfiguration.add(
-        objects.newInstance(LibraryConfiguration::class.java, projectName).also {
+        objects.newInstance(LibraryConfiguration::class.java, this.name.get()).also {
             libraryConfig.execute(it)
         }
     )

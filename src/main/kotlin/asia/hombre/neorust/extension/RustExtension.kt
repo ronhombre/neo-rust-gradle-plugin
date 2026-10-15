@@ -56,8 +56,6 @@ import javax.inject.Inject
 @Suppress("unused")
 abstract class RustExtension @Inject constructor(project: Project) {
     @Internal
-    internal val projectName: String = project.name
-    @Internal
     internal val logger: Logger = project.logger
     @Internal
     internal val objects: ObjectFactory = project.objects
@@ -183,6 +181,8 @@ abstract class RustExtension @Inject constructor(project: Project) {
         autoTests.convention(true)
         autoBenches.convention(true)
         autoExamples.convention(true)
+
+        name.convention(project.name.lowercase())
     }
 
     @get:Input

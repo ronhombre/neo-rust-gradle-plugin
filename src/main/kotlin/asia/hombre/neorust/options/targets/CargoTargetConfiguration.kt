@@ -50,7 +50,7 @@ abstract class CargoTargetConfiguration @Inject constructor(private val internal
     internal var actualName: String = if(name == "main") project.name.lowercase() else name
 
     @get:Internal
-    internal var binaryName: String = actualName
+    internal var binaryName: String = actualName.replace("-", "")
 
     @get:Inject
     abstract val project: Project

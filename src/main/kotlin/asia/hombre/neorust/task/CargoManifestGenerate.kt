@@ -331,7 +331,7 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             throw IllegalArgumentException(errorMessage + if(name == "lib") " or lib.rs" else "")
         }
         writeTable(name) {
-            writeField("name", configuration.actualName)
+            writeField("name", configuration.binaryName)
             writeField("path", configuration.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", configuration.test.orNull)
             writeBooleanField("doctest", configuration.doctest.orNull)
