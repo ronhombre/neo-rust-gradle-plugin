@@ -26,13 +26,17 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
+import org.gradle.work.NormalizeLineEndings
 import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.absolutePathString
@@ -44,10 +48,10 @@ import kotlin.time.measureTime
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
+@CacheableTask
 abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     @get:Inject
-    @get:Internal
-    abstract val cmd: ExecOperations
+    internal abstract val cmd: ExecOperations
 
     /**
      * The package to publish. See cargo-pkgid(1) for the SPEC format.
@@ -87,6 +91,8 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     abstract val features: ListProperty<String>
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:NormalizeLineEndings
     abstract val manifestPath: RegularFileProperty
 
     @get:Input

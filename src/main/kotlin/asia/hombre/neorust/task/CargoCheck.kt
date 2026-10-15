@@ -20,12 +20,14 @@ package asia.hombre.neorust.task
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.classpath.Instrumented
 import java.io.IOException
 import javax.inject.Inject
 
+@CacheableTask
 abstract class CargoCheck @Inject constructor(): DefaultTask() {
 
     @get:OutputFile

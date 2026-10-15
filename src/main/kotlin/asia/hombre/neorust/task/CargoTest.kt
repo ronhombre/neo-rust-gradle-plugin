@@ -19,6 +19,7 @@
 package asia.hombre.neorust.task
 
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
@@ -31,6 +32,7 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
+@CacheableTask
 abstract class CargoTest @Inject constructor(): CargoBench() {
     @get:Input
     @get:Optional

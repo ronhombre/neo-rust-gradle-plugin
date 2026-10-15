@@ -23,6 +23,7 @@ import asia.hombre.neorust.option.CargoMessageFormat
 import asia.hombre.neorust.option.CargoTiming
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
@@ -35,6 +36,7 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
+@CacheableTask
 abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     @get:Input
     @get:Optional

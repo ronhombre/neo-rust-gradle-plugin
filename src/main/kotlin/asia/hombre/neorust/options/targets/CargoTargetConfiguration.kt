@@ -28,6 +28,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.work.NormalizeLineEndings
 import java.io.File
 import javax.inject.Inject
 
@@ -53,6 +56,8 @@ abstract class CargoTargetConfiguration @Inject constructor(private val internal
     abstract val project: Project
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:NormalizeLineEndings
     @get:Optional
     abstract val path: RegularFileProperty
 

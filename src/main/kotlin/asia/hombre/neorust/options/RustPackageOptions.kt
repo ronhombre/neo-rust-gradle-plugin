@@ -26,6 +26,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.work.NormalizeLineEndings
 import javax.inject.Inject
 
 /**
@@ -78,6 +81,8 @@ abstract class RustPackageOptions @Inject constructor() {
     abstract val license: Property<String>
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:NormalizeLineEndings
     @get:Optional
     abstract val licenseFile: RegularFileProperty
 
@@ -90,10 +95,14 @@ abstract class RustPackageOptions @Inject constructor() {
     abstract val categories: ListProperty<String>
 
     @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:NormalizeLineEndings
     @get:Optional
     abstract val workspace: DirectoryProperty
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:NormalizeLineEndings
     @get:Optional
     abstract val buildFile: RegularFileProperty
 

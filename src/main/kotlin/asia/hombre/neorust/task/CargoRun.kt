@@ -1,7 +1,9 @@
 package asia.hombre.neorust.task
 
+import org.gradle.api.tasks.CacheableTask
 import javax.inject.Inject
 
+@CacheableTask
 abstract class CargoRun @Inject constructor(): CargoBuild() {
     init {
         //Checks if this instance is not a subclass and prevents changes to unavailable properties

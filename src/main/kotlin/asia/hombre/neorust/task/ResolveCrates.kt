@@ -26,6 +26,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -41,6 +42,7 @@ import javax.inject.Inject
  * @since 0.4.0
  * @author Ron Lauren Hombre
  */
+@CacheableTask
 abstract class ResolveCrates @Inject constructor(): DefaultTask() {
     @get:Inject
     abstract val objects: ObjectFactory

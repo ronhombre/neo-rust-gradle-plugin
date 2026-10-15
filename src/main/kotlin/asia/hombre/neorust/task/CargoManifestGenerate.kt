@@ -37,10 +37,14 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.NormalizeLineEndings
 import readRustCrateFromFile
 import relativeToManifest
 import writeArrayField
@@ -58,6 +62,7 @@ import javax.inject.Inject
  * @since 0.2.0
  * @author Ron Lauren Hombre
  */
+@CacheableTask
 abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     @get:Inject
     internal abstract val objects: ObjectFactory
@@ -86,6 +91,8 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     internal abstract val profileConfiguration: ListProperty<ProfileConfiguration>
 
     @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:NormalizeLineEndings
     internal abstract val resolvedCrates: DirectoryProperty
 
     @get:OutputFile

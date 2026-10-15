@@ -19,6 +19,7 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.internal.task.CargoTargettedTask
+import org.gradle.api.tasks.CacheableTask
 import javax.inject.Inject
 
 /**
@@ -29,6 +30,7 @@ import javax.inject.Inject
  * @since 0.4.0
  * @author Ron Lauren Hombre
  */
+@CacheableTask
 abstract class CargoClean @Inject constructor(): CargoTargettedTask() {
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
