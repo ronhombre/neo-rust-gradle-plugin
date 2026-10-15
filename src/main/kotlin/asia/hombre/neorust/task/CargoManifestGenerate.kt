@@ -339,8 +339,9 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             writeBooleanField("doc", configuration.doc.orNull)
             writeBooleanField("procMacro", configuration.procMacro.orNull)
             writeBooleanField("harness", configuration.harness.orNull)
-            //The user can't modify this, so we ignore it
-            //writeArrayField("crate-type", configuration.crateType.get())
+            //The user can't modify this, so we ignore it for the other configurations
+            if(configuration is LibraryConfiguration)
+                writeArrayField("crate-type", configuration.crateType.get())
             writeArrayField("required-features", configuration.requiredFeatures.get())
         }
     }
