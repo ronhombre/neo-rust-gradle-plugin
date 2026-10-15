@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.options
+package asia.hombre.neorust.internal.task
 
+import asia.hombre.neorust.task.CargoClean
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -25,12 +26,12 @@ import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Global Cargo build target options. This is applied everywhere by default.
+ * A Cargo task with a binary target
  *
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-abstract class RustBuildTargetOptions @Inject constructor() {
+abstract class CargoTargettedTask @Inject constructor(): CargoDefaultTask() {
     @get:Input
     @get:Optional
     abstract val lib: Property<Boolean>
@@ -70,4 +71,56 @@ abstract class RustBuildTargetOptions @Inject constructor() {
     @get:Input
     @get:Optional
     abstract val allTargets: Property<Boolean>
+
+    override fun compileArgs(): List<String> {
+        val args = super.compileArgs() as MutableList<String>
+
+        if(lib.getOrElse(false))
+            args.add("--lib")
+
+        bin.apply {
+            if(isPresent && get().isNotEmpty() && this@CargoTargettedTask !is CargoClean) {
+                args.add("--bin")
+                args.addAll(get())
+            }
+        }
+
+        if(bins.getOrElse(false))
+            args.add("--bins")
+
+        example.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--example")
+                args.addAll(get())
+            }
+        }
+
+        if(examples.getOrElse(false))
+            args.add("--examples")
+
+        test.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--test")
+                args.addAll(get())
+            }
+        }
+
+        if(tests.getOrElse(false))
+            args.add("--tests")
+
+        bench.apply {
+            if(isPresent && get().isNotEmpty()) {
+                args.add("--bench")
+                args.addAll(get())
+            }
+        }
+
+        if(benches.getOrElse(false))
+            args.add("--benches")
+
+        if(allTargets.getOrElse(false))
+            args.add("--all-targets")
+
+        return args
+    }
 }

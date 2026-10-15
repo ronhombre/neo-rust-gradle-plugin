@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package asia.hombre.neorust.internal
+package asia.hombre.neorust.internal.task
 
-import asia.hombre.neorust.extension.RustExtension
 import asia.hombre.neorust.option.CargoColor
 import asia.hombre.neorust.task.CargoClean
 import org.gradle.api.DefaultTask
@@ -46,9 +45,6 @@ import kotlin.time.measureTime
  * @author Ron Lauren Hombre
  */
 abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
-    @Internal
-    lateinit var ext: RustExtension
-
     @get:Inject
     @get:Internal
     abstract val cmd: ExecOperations
@@ -115,14 +111,6 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
 
     @get:Input
     @get:Optional
-    abstract val jobs: Property<Int>
-
-    @get:Input
-    @get:Optional
-    abstract val keepGoing: Property<Boolean>
-
-    @get:Input
-    @get:Optional
     abstract val verbose: Property<Boolean>
 
     @get:Input
@@ -148,6 +136,19 @@ abstract class CargoDefaultTask @Inject constructor() : DefaultTask() {
     @get:Input
     @get:Optional
     abstract val unstableFlags: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val jobs: Property<Int>
+
+    //TODO: Document this doesn't work with benchmarking. Use --no-fail-fast
+    @get:Input
+    @get:Optional
+    abstract val keepGoing: Property<Boolean>
+
+    @get:Input
+    @get:Optional
+    abstract val futureIncompatReport: Property<Boolean>
 
     @get:Input
     @get:Optional

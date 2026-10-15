@@ -18,7 +18,7 @@
 
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.internal.CargoTargettedTask
+import asia.hombre.neorust.internal.task.CargoTargettedTask
 import javax.inject.Inject
 
 /**

@@ -24,13 +24,21 @@ import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
 /**
- * Global Cargo test options
+ * Global Cargo options when running benchmarks or tests
  *
- * @since 0.1.0
+ * @since 0.2.0
  * @author Ron Lauren Hombre
  */
-abstract class RustTestOptions @Inject constructor(): RustBenchOptions() {
+abstract class RustTestOptions @Inject constructor() {
     @get:Input
     @get:Optional
-    abstract val testThreads: Property<Int>
+    abstract val noRun: Property<Boolean>
+
+    @get:Input
+    @get:Optional
+    abstract val noCapture: Property<Boolean>
+
+    @get:Input
+    @get:Optional
+    abstract val noFailFast: Property<Boolean>
 }

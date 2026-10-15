@@ -1,4 +1,4 @@
-# Neo Rust Gradle Plugin (0.5.7)
+# Neo Rust Gradle Plugin (0.6.0)
 
 ![Gradle Plugin Portal Version](https://img.shields.io/gradle-plugin-portal/v/asia.hombre.neorust?style=for-the-badge&label=neo-rust-gradle-plugin)
 
@@ -42,6 +42,9 @@ _**_ Based on [Cargo Manifest Docs](https://doc.rust-lang.org/cargo/reference/ma
 are limited to the whole `package` section(except for `resolver` field), the whole dependency tables(except for `target`
 because of its complexity), and limited support for `lib` section.
 
+> [!NOTE]
+> Due to the new DSL, some of the features may not work as expected.
+
 | Status  | Definition                                            |
 |---------|-------------------------------------------------------|
 | Full    | Fully supported all command options.                  |
@@ -51,23 +54,24 @@ because of its complexity), and limited support for `lib` section.
 | No Plan | Avoided implementing due to design or logic reasons.  |
 
 ### Current Status
-As of version 0.5.7, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
+As of version 0.6.0, Neo Rust Gradle Plugin can build, test, benchmark, publish(?), and run most Rust projects without
 requiring a Cargo.toml file. Additionally, users can use local Gradle modules as crate dependencies
 
 **Key capabilities:**
-- Full support for basic Cargo commands (build, test, bench, publish(?)).
-- Gradle-style dependency management for Rust crates.
+- Full support for basic Cargo commands (build, test, bench, publish(?))
+- Gradle-style dependency management for Rust crates
 - Custom Cargo.toml manifest generation.
 - Crate features support
 - Run built binaries directly from Gradle
 - Build only the library or the binary you want
 - Idiomatic crate dependency declaration
-- Latest Gradle 9.2.1 support
+- Latest Gradle 9.8.1 support
 - Gradle Parallel Build support (allow tasks to run in different threads at the same time)
 - Gradle Configuration Cache support (faster task run)
 - Gradle Incremental Build support (only runs build when source files are updated, including dependency source files)
 - Sub-module support (Declare Gradle projects as crate dependency)
 - Task wiring for projects and sub-projects
+- Custom Gradle DSL for Rust projects
 
 We're actively working on expanding support for more complex Rust project structures and additional Cargo features. If
 you need a feature now, consider contributing or submitting an issue!
@@ -75,132 +79,109 @@ you need a feature now, consider contributing or submitting an issue!
 ## Project Structure (Similar to Java and Kotlin)
 ```text
 project-root/
-├── build.gradle.kts    # Gradle build file where you configure the plugin
-├── settings.gradle.kts # Gradle settings file
+├── build.gradle.kts        # Gradle build file where you configure the plugin
+├── settings.gradle.kts     # Gradle settings file
 └── src/
     └── main/
         └── rust/
-            └── main.rs  # Your main Rust file (location configurable)
+            └── main.rs     # Your main binary Rust file (location configurable)
+            └── other       # Other binary Rust file (location configurable)
+                └── main.rs # Main binary Rust file for 'other'
+            └── helpers     # Rust module folder for 'helpers' (location configurable)
+                └── mod.rs
+            └── webhelp.rs  # Rust module file for 'webhelp' (location configurable)
+    └── library/
+        └── rust/
+            └── lib.rs      # Your main library Rust file (location configurable)
+    └── test/
+        └── rust/
+            └── main.rs     # Your main test Rust file (location configurable)
+    └── bench/
+        └── rust/
+            └── main.rs     # Your main bench Rust file (location configurable)
 ```
 ### Installation
 `build.gradle.kts`
 ```kotlin
 plugins {
-    id("asia.hombre.neorust") version "0.5.7"
+    id("asia.hombre.neorust") version "0.6.0"
 }
 ```
 
 ## Sample Code
 ### Rust Projects Using This Plugin
 * [KeccakRust](https://github.com/ronhombre/KeccakRust)
-### Gradle Kotlin DSL (build.gradle.kts)
+### Gradle Kotlin Sample DSL (build.gradle.kts)
 ```kotlin
-import asia.hombre.neorust.task.CargoBench
-import asia.hombre.neorust.task.CargoBuild
-import asia.hombre.neorust.task.CargoPublish
-import asia.hombre.neorust.task.CargoTest
+import asia.hombre.neorust.option.PanicFlag
 
 plugins {
-    id("asia.hombre.neorust") version "0.5.7"
+    id("asia.hombre.neorust") version "0.6.0"
+}
+
+group = "asia.hombre.keccak"
+version = "0.0.7"
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
-    crate("jni:0.21.1") {
-        path.set("../jni-rs")
+    crate("zeroize:1.8.2")
+    crate("hex:0.4.3") {
+        optional = true
     }
-
-    //If jni-rs is a Gradle neo-rust-gradle-plugin project
-    crate(project(":jni-rs")) {
-        //You can configure it further here.
-    }
-
-    crate("tokio-quiche:0.12.0") {
-        git = "https://github.com/cloudflare/quiche.git"
-        rev = "862ab1af92accf15613ad5d2a9bb62660fe8cd82" //Specify the commit (optional)
-    }
-
-    //Or just keep it like this if you don't need to configure it further
-    crate(project(":jni-rs"))
-
-    //devCrate("name:version")
-    //buildCrate("name:version")
+    devCrate("hex:0.4.3")
+    devCrate("criterion:0.8.2")
 }
 
-//Rust Configuration (Global-level)
 rust {
-    target.set("x86-unknown-linux-gnu")
-    
-    //This replaces the Cargo.toml and generates it in the ./build/ folder.
-    manifest {
-        packaging {
-            name.set("neorust") //This is automatically configured from the Gradle project name
-            authors.add("Ron Lauren Hombre <email@example.com>")
-            edition.set("2024")
-        }
-        lib {
-            crateType.add("cdylib")
-        }
-        binaries {
-            register("rusty") //Uses the default setting which is RELEASE
-            register("rusty") { //Uses the DEV setting and makes a buildRustyDev and a runRustyDev task
-                buildProfile = BuildProfile.DEV
-            }
-        }
+    authors.add("Ron Lauren Hombre <ronlauren@hombre.asia>")
+    edition = "2024"
+
+    library {
+        crateType.add("dylib")
+        crateType.add("rlib") //We are adding this to avoid double linking when running our binary executables
     }
-    
+
     features {
-        feature("your-feature")
-        feature("your-feature-2", listOf("value1", "value2"))
+        feature("default", "standalone")
+        feature("standalone")
+        feature("executable", "dep:hex")
     }
 
-    benchmarking {
-        //Benchmarking Configuration (Top-level)
-        packageSelect.set("packageb")
+    profiles {
+        val dev by getting {
+            panic = PanicFlag.abort
+        }
+        val release by getting {
+            panic = PanicFlag.abort
+        }
     }
 
-    building {
-        //Building Configuration (Top-level)
-        packageSelect.set("packagea")
-        release.set(true)
-        target.set("x86_64-unknown-linux-gnu")
+    binaries {
+        val main by getting {
+            noDefaultFeatures = true
+            buildFeatures.add("executable")
+        }
     }
 
-    publishing {
-        //Publishing Configuration (Top-level)
-        token.set("TOKEN")
+    tests {
+        val main by getting {
+            environment.put("RUST_BACKTRACE", "full")
+            buildFeatures.add("executable")
+        }
     }
 
-    testing {
-        //Testing Configuration (Top-level)
-        packageSelect.set("packageb")
+    benchmarks {
+        val standard by getting {
+            buildFeatures.add("executable")
+        }
     }
-}
-
-tasks.getByName<CargoBench>("bench") { //Becomes benchRust if conflicting a task name.
-    //Benchmarking Configuration (Task-level)
-    target.set("armeabi-unknown-linux-gnu")
-    noRun.set(true)
-}
-
-tasks.getByName<CargoBuild>("build") { //Becomes buildRust if conflicting a task name.
-    //Building Configuration (Task-level)
-    target.set("armeabi-unknown-linux-gnu")
-    workspace.set(true)
-}
-
-tasks.getByName<CargoPublish>("publish") { //Becomes publishRust if conflicting a task name.
-    //Publishing Configuration (Task-level)
-    dryRun.set(true)
-    target.set("armeabi-unknown-linux-gnu")
-    token.set("TOKEN")
-}
-
-tasks.getByName<CargoTest>("test") { //Becomes testRust if conflicting a task name.
-    //Testing Configuration (Task-level)
-    target.set("armeabi-unknown-linux-gnu")
-    testThreads.set(2)
 }
 ```
+
+See the complete [DSL](https://github.com/ronhombre/KeccakRust/blob/master/DSL.md) for more details.
 
 * Global-level Configurations are automatically assigned to Top-level and then Task-level Configurations.
 * Top-level Configurations override Global-level Configurations and are automatically assigned to Task-level Configurations.
@@ -232,7 +213,7 @@ Hire me at [Linkedin](https://www.linkedin.com/in/rlhombre/) if you want exclusi
 
 ## License (Apache 2.0)
 ```text
-Copyright 2025 Ron Lauren Hombre (and the neo-rust-gradle-plugin contributors)
+Copyright 2026 Ron Lauren Hombre (and the neo-rust-gradle-plugin contributors)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

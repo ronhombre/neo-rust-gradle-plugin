@@ -44,7 +44,10 @@ abstract class CargoTargetConfiguration @Inject constructor(private val internal
         get() = "undefined"
 
     @get:Internal
-    internal val actualName: String = if(name == "main") project.name.lowercase() else name
+    internal var actualName: String = if(name == "main") project.name.lowercase() else name
+
+    @get:Internal
+    internal var binaryName: String = actualName
 
     @get:Inject
     abstract val project: Project
@@ -94,6 +97,9 @@ abstract class CargoTargetConfiguration @Inject constructor(private val internal
     internal var isExcluded = false
 
     @get:Internal
+    internal var isShadow = false
+
+    @get:Internal
     internal val currentDirectory: Directory = project
         .layout
         .projectDirectory
@@ -102,13 +108,15 @@ abstract class CargoTargetConfiguration @Inject constructor(private val internal
         .dir("rust")
 
     init {
-        if(this is LibraryConfiguration && tryResolve("lib.rs")) {
-            //DO NOTHING
-        } else if(!tryResolve("$name.rs") && !tryResolve(name, "main.rs")) {
-            val type = this.javaClass.name.substringAfterLast(".").substringBefore("Configuration")
-            val errorMessage = "Target with type $type and name $name cannot be found at the expected location: '${currentDirectory.asFile.path}' as $name.rs or $name${File.separator}main.rs"
-            throw IllegalArgumentException(errorMessage)
-        }
+        isEnabled = (tryResolve("$name.rs") || tryResolve(name, "main.rs"))
+                || this is LibraryConfiguration && tryResolve("lib.rs")
+    }
+
+    internal fun sameAs(other: CargoTargetConfiguration) {
+        this.path.set(other.path)
+        this.isEnabled = other.isEnabled
+        this.binaryName = other.binaryName
+        this.isShadow = true
     }
 
     open fun resolve(vararg paths: String): Boolean {
@@ -133,7 +141,6 @@ abstract class CargoTargetConfiguration @Inject constructor(private val internal
         val finalFilePath = currentDirectory.file(paths.last())
 
         if(!finalFilePath.asFile.exists()) {
-            println(false)
             return false
         }
 

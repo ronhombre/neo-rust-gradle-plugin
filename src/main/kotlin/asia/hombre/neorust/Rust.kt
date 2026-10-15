@@ -19,8 +19,9 @@
 package asia.hombre.neorust
 
 import asia.hombre.neorust.extension.RustExtension
-import asia.hombre.neorust.internal.CargoDefaultTask
+import asia.hombre.neorust.internal.task.CargoDefaultTask
 import asia.hombre.neorust.options.RustCrateOptions
+import asia.hombre.neorust.options.RustPackageOptions
 import asia.hombre.neorust.options.targets.BinaryConfiguration
 import asia.hombre.neorust.task.CargoBench
 import asia.hombre.neorust.task.CargoBuild
@@ -42,12 +43,11 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 import readRustCrateFromFile
 import readTomlStringFields
-import setBenchProperties
 import setBuildProperties
 import setDefaultProperties
 import setPublishProperties
 import setRunProperties
-import setTargettedProperties
+import setTestExecutionOptions
 import setTestProperties
 import java.io.File
 import java.io.IOException
@@ -59,6 +59,34 @@ class Rust: Plugin<Project> {
         val extension = target.extensions.create("rust", RustExtension::class.java)
         val crateLibrary = target.objects.newInstance(CrateLibrary::class.java)
         target.dependencies.extensions.add("rustDependencies", crateLibrary)
+
+        val packageOptions = target.objects.newInstance(RustPackageOptions::class.java)
+
+        //Inherit properties from the global extension
+        packageOptions.apply {
+            name.set(extension.name)
+            version.set(extension.version)
+            authors.set(extension.authors)
+            edition.set(extension.edition)
+            rustVersion.set(extension.rustVersion)
+            description.set(extension.description)
+            documentation.set(extension.documentation)
+            readme.set(extension.readme)
+            homepage.set(extension.homepage)
+            repository.set(extension.repository)
+            license.set(extension.license)
+            licenseFile.set(extension.licenseFile)
+            keywords.set(extension.keywords)
+            categories.set(extension.categories)
+            workspace.set(extension.workspace)
+            buildFile.set(extension.buildFile)
+            links.set(extension.links)
+            exclude.set(extension.exclude)
+            include.set(extension.include)
+            publish.set(extension.publish)
+            publishEnabled.set(extension.publishEnabled)
+            defaultRun.set(extension.defaultRun)
+        }
 
         //Detect test environment
         if(IS_TEST_ENVIRONMENT)
@@ -116,16 +144,15 @@ class Rust: Plugin<Project> {
         val generateCargoManifest = tryRegisterTask {
             target.tasks.register("generateCargoManifest", CargoManifestGenerate::class.java) {
                 group = "build"
-                rustPackageOptions.set(extension.rustPackageOptions)
-                rustProfileOptions.set(extension.rustProfileOptions)
+                rustPackageOptions.set(packageOptions)
                 rustFeaturesOptions.set(extension.rustFeaturesOptions)
                 libraryConfiguration.set(extension.libraryConfiguration)
                 binaryConfiguration.set(extension.binariesConfiguration)
                 exampleConfiguration.set(extension.examplesConfiguration)
                 testConfiguration.set(extension.testsConfiguration)
                 benchmarkConfiguration.set(extension.benchmarksConfiguration)
+                profileConfiguration.set(extension.profilesConfiguration)
                 this.crateLibrary.set(crateLibrary)
-                featuresList.set(extension.featuresList)
                 manifestPath.set(extension.manifestPath)
                 resolvedCrates.set(resolveCrates.resolvedOutput)
 
@@ -155,9 +182,7 @@ class Rust: Plugin<Project> {
             target.tasks.register(cleanTask, CargoClean::class.java) {
                 dependsOn("generateCargoManifest")
                 group = "build"
-                this.ext = extension
-                setDefaultProperties()
-                setTargettedProperties()
+                setDefaultProperties(extension)
 
                 inputs.file(manifestPath)
 
@@ -171,13 +196,15 @@ class Rust: Plugin<Project> {
             target.tasks.register(publishTask, CargoPublish::class.java) {
                 dependsOn("generateCargoManifest")
                 group = "publishing"
-                this.ext = extension
-                setDefaultProperties()
-                setPublishProperties()
+                setDefaultProperties(extension)
+                setPublishProperties(extension)
 
                 inputs.file(manifestPath)
             }.get()
         }
+
+        extension.lintsConfiguration.register("rust") {}
+        extension.lintsConfiguration.register("clippy") {}
 
         //Auto-resolvers
         if(extension.autoLib.get()) autoResolveLibrary(target, extension)
@@ -186,8 +213,13 @@ class Rust: Plugin<Project> {
         if(extension.autoBenches.get()) autoResolveBenchmarks(target, extension)
         if(extension.autoExamples.get()) autoResolveExamples(target, extension)
 
+        extension.profilesConfiguration.register("dev") {}
+        extension.profilesConfiguration.register("release") {}
+        extension.profilesConfiguration.register("test") {}
+        extension.profilesConfiguration.register("bench") {}
+
         target.afterEvaluate {
-            extension.rustPackageOptions.apply {
+            extension.apply {
                 name.convention(project.name.lowercase())
                 version.convention(project.version.toString())
                 description.convention(project.description)
@@ -223,10 +255,8 @@ class Rust: Plugin<Project> {
                     dependsOn("generateCargoManifest")
                     group = "build"
                     description = "Builds all the binaries using the default profile"
-                    this.ext = extension
-                    setDefaultProperties()
-                    setTargettedProperties()
-                    setBuildProperties()
+                    setDefaultProperties(extension)
+                    setBuildProperties(extension)
 
                     inputs.file(manifestPath)
 
@@ -242,10 +272,8 @@ class Rust: Plugin<Project> {
                 target.tasks.register(benchTask, CargoBench::class.java) {
                     dependsOn("generateCargoManifest")
                     group = "verification"
-                    this.ext = extension
-                    setDefaultProperties()
-                    setTargettedProperties()
-                    setBenchProperties()
+                    setDefaultProperties(extension)
+                    setTestExecutionOptions(extension)
 
                     inputs.file(manifestPath)
 
@@ -259,11 +287,9 @@ class Rust: Plugin<Project> {
                 target.tasks.register(testTask, CargoTest::class.java) {
                     dependsOn("generateCargoManifest")
                     group = "verification"
-                    this.ext = extension
-                    setDefaultProperties()
-                    setTargettedProperties()
-                    setBenchProperties()
-                    setTestProperties()
+                    setDefaultProperties(extension)
+                    setTestExecutionOptions(extension)
+                    setTestProperties(extension)
 
                     inputs.file(manifestPath)
 
@@ -288,6 +314,8 @@ class Rust: Plugin<Project> {
                     target.addRunTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
 
+            //TODO: Add test options
+            //TODO: Add test exec options
             extension
                 .testsConfiguration
                 .filterNot {
@@ -296,6 +324,7 @@ class Rust: Plugin<Project> {
                     target.addTestTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
 
+            //TODO: Add benchmark options
             extension
                 .benchmarksConfiguration
                 .filterNot {
@@ -304,7 +333,7 @@ class Rust: Plugin<Project> {
                     target.addBenchTaskForTarget(digestBuffer, gradleRustDependencies, extension, config)
                 }
 
-            if(extension.libraryConfiguration.path.isPresent) {
+            if(extension.libraryConfiguration.firstOrNull()?.path?.isPresent == true) {
                 var buildLibraryTask = "buildLibraryOnly" + addIfTest()
                 buildLibraryTask += addIfConflictingTask(target, buildLibraryTask)
                 tryRegisterTask {
@@ -314,10 +343,8 @@ class Rust: Plugin<Project> {
                         dependsOn("generateCargoManifest")
                         group = "build"
                         description = "Builds the library only"
-                        this.ext = extension
-                        setDefaultProperties()
-                        setTargettedProperties()
-                        setBuildProperties()
+                        setDefaultProperties(extension)
+                        setBuildProperties(extension)
                         this.lib.set(true)
 
                         inputs.file(manifestPath)
@@ -334,10 +361,8 @@ class Rust: Plugin<Project> {
                         dependsOn("generateCargoManifest")
                         group = "build"
                         description = "Builds the library only as release"
-                        this.ext = extension
-                        setDefaultProperties()
-                        setTargettedProperties()
-                        setBuildProperties()
+                        setDefaultProperties(extension)
+                        setBuildProperties(extension)
                         this.lib.set(true)
                         this.release.set(true)
 
@@ -453,7 +478,7 @@ class Rust: Plugin<Project> {
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "build" + configuration.name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                "build" + configuration.actualName.uppercaseFirstChar() + if(release) "Release" else "Dev",
                 CargoBuild::class.java
             )
 
@@ -462,10 +487,8 @@ class Rust: Plugin<Project> {
                 group = "build"
                 description = "Build '${configuration.actualName}' Binary as " + if(release) "release." else "dev."
 
-                this.ext = extension
-                setDefaultProperties()
-                setTargettedProperties()
-                setBuildProperties()
+                setDefaultProperties(extension)
+                setBuildProperties(extension)
 
                 this.release.set(release)
                 this.features.addAll(configuration.buildFeatures.get())
@@ -473,7 +496,7 @@ class Rust: Plugin<Project> {
                 //Get off the Global properties
                 this.bin.set(mutableListOf())
 
-                this.bin.add(configuration.actualName)
+                this.bin.add(configuration.binaryName)
 
                 inputs.file(manifestPath)
 
@@ -493,7 +516,7 @@ class Rust: Plugin<Project> {
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "run" + configuration.name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                "run" + configuration.actualName.uppercaseFirstChar() + if(release) "Release" else "Dev",
                 CargoRun::class.java
             )
 
@@ -502,10 +525,8 @@ class Rust: Plugin<Project> {
                 group = "application"
                 description = "Run '${configuration.actualName}' Binary as " + if(release) "release." else "dev."
 
-                this.ext = extension
-                setDefaultProperties()
-                setTargettedProperties()
-                setBuildProperties()
+                setDefaultProperties(extension)
+                setBuildProperties(extension)
                 setRunProperties(configuration)
 
                 this.release.set(release)
@@ -514,7 +535,7 @@ class Rust: Plugin<Project> {
                 //Get off the Global properties
                 this.bin.set(mutableListOf())
 
-                this.bin.add(configuration.actualName)
+                this.bin.add(configuration.binaryName)
 
                 inputs.file(manifestPath)
 
@@ -534,7 +555,7 @@ class Rust: Plugin<Project> {
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "bench" + configuration.name.uppercaseFirstChar(),
+                "bench" + configuration.actualName.uppercaseFirstChar(),
                 CargoBench::class.java
             )
 
@@ -543,12 +564,10 @@ class Rust: Plugin<Project> {
                 group = "verification"
                 description = "Benchmark '${configuration.actualName}'"
 
-                this.ext = extension
-                setDefaultProperties()
-                setTargettedProperties()
-                setBuildProperties()
+                setDefaultProperties(extension)
+                setBuildProperties(extension)
                 setRunProperties(configuration)
-                setBenchProperties()
+                setTestExecutionOptions(extension)
 
                 this.release.set(release)
                 this.features.addAll(configuration.buildFeatures.get())
@@ -578,7 +597,7 @@ class Rust: Plugin<Project> {
     ) {
         tryRegisterTask {
             val task = this.tasks.register(
-                "test" + configuration.name.uppercaseFirstChar() + if(release) "Release" else "Dev",
+                "test" + configuration.actualName.uppercaseFirstChar() + if(release) "Release" else "Dev",
                 CargoTest::class.java
             )
 
@@ -587,13 +606,11 @@ class Rust: Plugin<Project> {
                 group = "verification"
                 description = "Test '${configuration.actualName}' as " + if(release) "release." else "dev."
 
-                this.ext = extension
-                setDefaultProperties()
-                setTargettedProperties()
-                setBuildProperties()
+                setDefaultProperties(extension)
+                setBuildProperties(extension)
                 setRunProperties(configuration)
-                setBenchProperties()
-                setTestProperties()
+                setTestExecutionOptions(extension)
+                setTestProperties(extension)
 
                 this.release.set(release)
                 this.features.addAll(configuration.buildFeatures.get())
@@ -665,7 +682,7 @@ class Rust: Plugin<Project> {
         val potentialLibraryFile = libraryDirectory.file("lib.rs")
 
         if(potentialLibraryFile.asFile.exists()) {
-            extension.libraryConfiguration.path.set(potentialLibraryFile)
+            extension.libraryConfiguration.firstOrNull()?.path?.set(potentialLibraryFile)
         }
     }
 
@@ -684,7 +701,9 @@ class Rust: Plugin<Project> {
     }
 
     private fun autoResolveBinaries(project: Project, extension: RustExtension) {
-        resolveMainRustFiles(project.layout, "main").forEach { file ->
+        resolveMainRustFiles(project.layout, "main").filter {
+            it.nameWithoutExtension == "main" || it.nameWithoutExtension == project.name.lowercase()
+        }.forEach { file ->
             extension.binariesConfiguration.register(file.nameWithoutExtension.lowercase()) {
                 path.set(file)
             }

@@ -18,7 +18,7 @@
 
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.internal.CargoDefaultTask
+import asia.hombre.neorust.internal.task.CargoDefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
