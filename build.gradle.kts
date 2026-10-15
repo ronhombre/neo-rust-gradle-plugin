@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "asia.hombre.neorust"
-version = "0.5.7"
+version = "0.6.0"
 description = "Build Rust Crates within Gradle and integrate with other Gradle projects"
 val officialName = "Neo Rust Gradle Plugin"
 
@@ -64,7 +64,7 @@ publishing {
 
 dokka {
     pluginsConfiguration.html {
-        footerMessage = "Copyright (c) 2025 Ron Lauren Hombre (and the neo-rust-gradle-plugin contributors)"
+        footerMessage = "Copyright (c) 2026 Ron Lauren Hombre (and the neo-rust-gradle-plugin contributors)"
     }
 
     dokkaPublications.html {

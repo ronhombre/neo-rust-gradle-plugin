@@ -32,7 +32,7 @@ import javax.inject.Inject
  * @since 0.1.0
  * @author Ron Lauren Hombre
  */
-abstract class RustBuildOptions @Inject constructor(): RustBuildTargetOptions() {
+abstract class RustBuildOptions @Inject constructor(): RustMiscellaneousOptions() {
     @get:Input
     @get:Optional
     abstract val workspace: Property<Boolean>
@@ -64,8 +64,4 @@ abstract class RustBuildOptions @Inject constructor(): RustBuildTargetOptions() 
     @get:Input
     @get:Optional
     abstract val buildPlan: Property<Boolean>
-
-    @get:Input
-    @get:Optional
-    abstract val futureIncompatReport: Property<Boolean>
 }

@@ -18,9 +18,13 @@
 
 package asia.hombre.neorust.options
 
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import javax.inject.Inject
 
@@ -33,65 +37,86 @@ import javax.inject.Inject
 abstract class RustPackageOptions @Inject constructor() {
     @get:Input
     abstract val name: Property<String>
+
     @get:Input
     abstract val version: Property<String>
+
     @get:Input
     @get:Optional
     abstract val authors: ListProperty<String>
+
     @get:Input
     @get:Optional
     abstract val edition: Property<String>
+
     @get:Input
     @get:Optional
     abstract val rustVersion: Property<String>
+
     @get:Input
     @get:Optional
     abstract val description: Property<String>
+
     @get:Input
     @get:Optional
     abstract val documentation: Property<String>
+
     @get:Input
     @get:Optional
     abstract val readme: Property<String>
+
     @get:Input
     @get:Optional
     abstract val homepage: Property<String>
+
     @get:Input
     @get:Optional
     abstract val repository: Property<String>
+
     @get:Input
     @get:Optional
     abstract val license: Property<String>
-    @get:Input
+
+    @get:InputFile
     @get:Optional
-    abstract val licenseFile: Property<String>
+    abstract val licenseFile: RegularFileProperty
+
     @get:Input
     @get:Optional
     abstract val keywords: ListProperty<String>
+
     @get:Input
     @get:Optional
     abstract val categories: ListProperty<String>
-    @get:Input
+
+    @get:InputDirectory
     @get:Optional
-    abstract val workspace: Property<String>
-    @get:Input
+    abstract val workspace: DirectoryProperty
+
+    @get:InputFile
     @get:Optional
-    abstract val buildFile: Property<String>
+    abstract val buildFile: RegularFileProperty
+
     @get:Input
     @get:Optional
     abstract val links: Property<String>
+
     @get:Input
     @get:Optional
     abstract val exclude: ListProperty<String>
+
     @get:Input
     @get:Optional
     abstract val include: ListProperty<String>
+
     @get:Input
     @get:Optional
     abstract val publish: ListProperty<String>
+
     @get:Input
     @get:Optional
     abstract val publishEnabled: Property<Boolean>
+
     @get:Input
     @get:Optional
     abstract val defaultRun: Property<String>

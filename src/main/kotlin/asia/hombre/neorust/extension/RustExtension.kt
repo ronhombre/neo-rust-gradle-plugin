@@ -18,23 +18,19 @@
 
 package asia.hombre.neorust.extension
 
+import asia.hombre.neorust.container.BenchmarksConfigurationContainer
+import asia.hombre.neorust.container.BinariesConfigurationContainer
+import asia.hombre.neorust.container.ExamplesConfigurationContainer
+import asia.hombre.neorust.container.LibraryConfigurationContainer
+import asia.hombre.neorust.container.LintsConfigurationContainer
+import asia.hombre.neorust.container.ProfilesConfigurationContainer
+import asia.hombre.neorust.container.TestsConfigurationContainer
 import asia.hombre.neorust.option.CargoColor
-import asia.hombre.neorust.options.RustBenchOptions
 import asia.hombre.neorust.options.RustBuildOptions
-import asia.hombre.neorust.options.RustBuildTargetOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
-import asia.hombre.neorust.options.RustPackageOptions
-import asia.hombre.neorust.options.RustProfileOptions
 import asia.hombre.neorust.options.RustPublishOptions
+import asia.hombre.neorust.options.RustTestExecutionOptions
 import asia.hombre.neorust.options.RustTestOptions
-import asia.hombre.neorust.options.targets.BenchmarkConfiguration
-import asia.hombre.neorust.options.targets.BinaryConfiguration
-import asia.hombre.neorust.options.targets.CargoTargetConfiguration
-import asia.hombre.neorust.options.targets.ExampleConfiguration
-import asia.hombre.neorust.options.targets.LibraryConfiguration
-import asia.hombre.neorust.options.targets.TestConfiguration
-import org.gradle.api.GradleException
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -101,14 +97,6 @@ abstract class RustExtension @Inject constructor(project: Project) {
 
     @get:Input
     @get:Optional
-    abstract val features: ListProperty<String>
-
-    @get:Input
-    @get:Optional
-    abstract val featuresList: MapProperty<String, List<String>>
-
-    @get:Input
-    @get:Optional
     abstract val noDefaultFeatures: Property<Boolean>
 
     @get:InputFile
@@ -129,14 +117,6 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @get:Input
     @get:Optional
     abstract val frozen: Property<Boolean>
-
-    @get:Input
-    @get:Optional
-    abstract val jobs: Property<Int>
-
-    @get:Input
-    @get:Optional
-    abstract val keepGoing: Property<Boolean>
 
     @get:Input
     @get:Optional
@@ -161,6 +141,19 @@ abstract class RustExtension @Inject constructor(project: Project) {
     @get:Input
     @get:Optional
     abstract val configPaths: ListProperty<Path>
+
+    @get:Input
+    @get:Optional
+    abstract val jobs: Property<Int>
+
+    //TODO: Document this doesn't work with benchmarking. Use --no-fail-fast
+    @get:Input
+    @get:Optional
+    abstract val keepGoing: Property<Boolean>
+
+    @get:Input
+    @get:Optional
+    abstract val futureIncompatReport: Property<Boolean>
 
     @get:Input
     @get:Optional
@@ -192,17 +185,99 @@ abstract class RustExtension @Inject constructor(project: Project) {
         autoExamples.convention(true)
     }
 
+    @get:Input
+    abstract val name: Property<String>
+
+    @get:Input
+    abstract val version: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val authors: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val edition: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val rustVersion: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val description: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val documentation: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val readme: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val homepage: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val repository: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val license: Property<String>
+
+    @get:InputFile
+    @get:Optional
+    abstract val licenseFile: RegularFileProperty
+
+    @get:Input
+    @get:Optional
+    abstract val keywords: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val categories: ListProperty<String>
+
+    @get:InputDirectory
+    @get:Optional
+    abstract val workspace: DirectoryProperty
+
+    @get:InputFile
+    @get:Optional
+    abstract val buildFile: RegularFileProperty
+
+    @get:Input
+    @get:Optional
+    abstract val links: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val exclude: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val include: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val publish: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val publishEnabled: Property<Boolean>
+
+    @get:Input
+    @get:Optional
+    abstract val defaultRun: Property<String>
+
     @Internal
-    internal val rustBuildTargetOptions: RustBuildTargetOptions = objects.newInstance(
-        RustBuildTargetOptions::class.java
+    internal val rustTestOptions: RustTestOptions = objects.newInstance(
+        RustTestOptions::class.java
     )
     @Internal
-    internal val rustPackageOptions: RustPackageOptions = objects.newInstance(
-        RustPackageOptions::class.java
-    )
-    @Internal
-    internal val rustBenchOptions: RustBenchOptions = objects.newInstance(
-        RustBenchOptions::class.java
+    internal val rustBenchmarkOptions: RustTestOptions = objects.newInstance(
+        RustTestOptions::class.java
     )
     @Internal
     internal val rustBuildOptions: RustBuildOptions = objects.newInstance(
@@ -213,61 +288,44 @@ abstract class RustExtension @Inject constructor(project: Project) {
         RustPublishOptions::class.java
     )
     @Internal
-    internal val rustTestOptions: RustTestOptions = objects.newInstance(
-        RustTestOptions::class.java
+    internal val rustTestExecutionOptions: RustTestExecutionOptions = objects.newInstance(
+        RustTestExecutionOptions::class.java
     )
     @Internal
     internal val rustFeaturesOptions: RustFeaturesOptions = objects.newInstance(
         RustFeaturesOptions::class.java
     )
+
     @Internal
-    internal val rustProfileOptions: RustProfileOptions = objects.newInstance(
-        RustProfileOptions::class.java
+    internal val lintsConfiguration: LintsConfigurationContainer = objects.newInstance(
+        LintsConfigurationContainer::class.java
     )
 
     //Cargo Targets
     @Internal
-    internal val libraryConfiguration: LibraryConfiguration = objects.newInstance(
-        LibraryConfiguration::class.java,
-        project.name
+    internal val libraryConfiguration: LibraryConfigurationContainer = objects.newInstance(
+        LibraryConfigurationContainer::class.java
     )
     @Internal
-    internal val binariesConfiguration: NamedDomainObjectContainer<BinaryConfiguration> = objects.safeDomainObjectContainer()
+    internal val binariesConfiguration: BinariesConfigurationContainer = objects.newInstance(
+        BinariesConfigurationContainer::class.java
+    )
     @Internal
-    internal val examplesConfiguration: NamedDomainObjectContainer<ExampleConfiguration> = objects.safeDomainObjectContainer()
+    internal val examplesConfiguration: ExamplesConfigurationContainer = objects.newInstance(
+        ExamplesConfigurationContainer::class.java
+    )
     @Internal
-    internal val testsConfiguration: NamedDomainObjectContainer<TestConfiguration> = objects.safeDomainObjectContainer()
+    internal val testsConfiguration: TestsConfigurationContainer = objects.newInstance(
+        TestsConfigurationContainer::class.java
+    )
     @Internal
-    internal val benchmarksConfiguration: NamedDomainObjectContainer<BenchmarkConfiguration> = objects.safeDomainObjectContainer()
+    internal val benchmarksConfiguration: BenchmarksConfigurationContainer = objects.newInstance(
+        BenchmarksConfigurationContainer::class.java
+    )
 
-    private inline fun <reified T : CargoTargetConfiguration> ObjectFactory.safeDomainObjectContainer(): NamedDomainObjectContainer<T> {
-        return this.domainObjectContainer(T::class.java) { name ->
-            //What the fuck, Gradle!
-            try {
-                this.newInstance(T::class.java, name)
-            } catch (e: Exception) {
-                //Unwraps the actual Exception and fallbacks to the current Exception
-                val error = e.cause?: e
-                //Only by calling logger.error(..) does Gradle actually stop the task. Otherwise, it absorbs the error
-                logger.error(error.message, error)
-                throw GradleException("Could not create ${T::class.simpleName} '$name'", error)
-            }
-        }
-    }
-
-    fun binaries(action: NamedDomainObjectContainer<BinaryConfiguration>.() -> Unit) {
-        action(binariesConfiguration)
-    }
-
-    fun tests(action: NamedDomainObjectContainer<TestConfiguration>.() -> Unit) {
-        action(testsConfiguration)
-    }
-
-    fun benchmarks(action: NamedDomainObjectContainer<BenchmarkConfiguration>.() -> Unit) {
-        action(benchmarksConfiguration)
-    }
-
-    fun examples(action: NamedDomainObjectContainer<ExampleConfiguration>.() -> Unit) {
-        action(examplesConfiguration)
-    }
+    //Profiles
+    @Internal
+    internal val profilesConfiguration: ProfilesConfigurationContainer = objects.newInstance(
+        ProfilesConfigurationContainer::class.java
+    )
 }

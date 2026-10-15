@@ -19,10 +19,12 @@
 package asia.hombre.neorust.task
 
 import asia.hombre.neorust.CrateLibrary
+import asia.hombre.neorust.option.OptLevel
 import asia.hombre.neorust.options.RustCrateOptions
 import asia.hombre.neorust.options.RustFeaturesOptions
 import asia.hombre.neorust.options.RustPackageOptions
-import asia.hombre.neorust.options.RustProfileOptions
+import asia.hombre.neorust.options.profiles.GenericProfileConfiguration
+import asia.hombre.neorust.options.profiles.ProfileConfiguration
 import asia.hombre.neorust.options.targets.BenchmarkConfiguration
 import asia.hombre.neorust.options.targets.BinaryConfiguration
 import asia.hombre.neorust.options.targets.CargoTargetConfiguration
@@ -34,9 +36,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputFile
@@ -47,6 +47,7 @@ import writeArrayField
 import writeBooleanField
 import writeCrateField
 import writeField
+import writeNumberField
 import writeTable
 import java.io.File
 import javax.inject.Inject
@@ -66,13 +67,11 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     @get:Nested
     internal abstract val rustPackageOptions: Property<RustPackageOptions>
     @get:Nested
-    internal abstract val rustProfileOptions: Property<RustProfileOptions>
-    @get:Nested
     internal abstract val rustFeaturesOptions: Property<RustFeaturesOptions>
 
     //Cargo Targets
     @get:Nested
-    internal abstract val libraryConfiguration: Property<LibraryConfiguration>
+    internal abstract val libraryConfiguration: ListProperty<LibraryConfiguration>
     @get:Nested
     internal abstract val binaryConfiguration: ListProperty<BinaryConfiguration>
     @get:Nested
@@ -82,8 +81,10 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
     @get:Nested
     internal abstract val benchmarkConfiguration: ListProperty<BenchmarkConfiguration>
 
-    @get:Input
-    internal abstract val featuresList: MapProperty<String, List<String>>
+    //Profiles
+    @get:Nested
+    internal abstract val profileConfiguration: ListProperty<ProfileConfiguration>
+
     @get:InputDirectory
     internal abstract val resolvedCrates: DirectoryProperty
 
@@ -136,9 +137,6 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         )
 
         content.writeTable("package") {
-            if(!packageOptions.name.isPresent)
-                throw IllegalArgumentException("Package 'name' cannot be unset.")
-
             writeField("name", packageOptions.name.get())
             writeField("version", packageOptions.version.get())
             if(packageOptions.authors.isPresent)
@@ -160,15 +158,15 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             if(packageOptions.license.isPresent)
                 writeField("license", packageOptions.license.get())
             if(packageOptions.licenseFile.isPresent)
-                writeField("license-file", packageOptions.licenseFile.get())
+                writeField("license-file", packageOptions.licenseFile.get().asFile.absolutePath)
             if(packageOptions.keywords.isPresent)
                 writeArrayField("keywords", packageOptions.keywords.get())
             if(packageOptions.categories.isPresent)
                 writeArrayField("categories", packageOptions.categories.get())
             if(packageOptions.workspace.isPresent)
-                writeField("workspace", packageOptions.workspace.get())
+                writeField("workspace", packageOptions.workspace.get().asFile.absolutePath)
             if(packageOptions.buildFile.isPresent)
-                writeField("build", packageOptions.buildFile.get())
+                writeField("build", packageOptions.buildFile.get().asFile.absolutePath)
             if(packageOptions.links.isPresent)
                 writeField("links", packageOptions.links.get())
             if(packageOptions.exclude.isPresent)
@@ -192,41 +190,30 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
             writeBooleanField("autobenches", false)
         }
 
-        if(rustProfileOptions.get().dev.get().isNotEmpty()) content.writeTable("profile.dev") {
-            rustProfileOptions.get().dev.get().forEach { dev ->
-                writeField(dev.key, dev.value)
+        for (configuration in profileConfiguration.get()) {
+            content.writeProfileConfiguration("profile.${configuration.name.lowercase()}", configuration)
+
+            for ((name, overrideConfiguration) in configuration.overrides.get()) {
+                if(name == "#build#") content.writeProfileConfiguration(
+                    "profile.${configuration.name.lowercase()}.build-override",
+                    overrideConfiguration
+                )
+                else {
+                    val packageName = if(name == "*") "\"*\"" else name
+                    content.writeProfileConfiguration(
+                        "profile.${configuration.name.lowercase()}.package.$packageName",
+                        overrideConfiguration
+                    )
+                }
             }
         }
 
-        if(rustProfileOptions.get().release.get().isNotEmpty()) content.writeTable("profile.release") {
-            rustProfileOptions.get().release.get().forEach { release ->
-                writeField(release.key, release.value)
-            }
-        }
-
-        if(rustProfileOptions.get().test.get().isNotEmpty()) content.writeTable("profile.test") {
-            rustProfileOptions.get().test.get().forEach { test ->
-                writeField(test.key, test.value)
-            }
-        }
-
-        if(rustProfileOptions.get().bench.get().isNotEmpty()) content.writeTable("profile.bench") {
-            rustProfileOptions.get().bench.get().forEach { bench ->
-                writeField(bench.key, bench.value)
-            }
-        }
-
-        val featuresMap: MutableList<RustFeaturesOptions.Feature> = mutableListOf()
-
-        featuresMap.addAll(rustFeaturesOptions.get().list.get())
-        featuresMap.addAll(featuresList.get().map { feature ->
-            RustFeaturesOptions.Feature(feature.key, feature.value)
-        })
+        val featuresMap: Map<String, List<String>> = rustFeaturesOptions.get().featureMap.get()
 
         if(featuresMap.isNotEmpty()) {
             content.writeTable("features") {
-                featuresMap.forEach { feature ->
-                    writeArrayField(feature.name, feature.values, true)
+                featuresMap.forEach { (name, features) ->
+                    writeArrayField(name, features.toSet(), true)
                 }
             }
         }
@@ -257,42 +244,32 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
 
         val rustLibraryOptions = libraryConfiguration.get()
 
-        if(rustLibraryOptions.path.isPresent) content.writeTable("lib") {
-            writeField("name", rustLibraryOptions.actualName)
-            writeField("path", rustLibraryOptions.path.get().relativeToManifest(cargoToml))
-            writeBooleanField("test", rustLibraryOptions.test.orNull)
-            writeBooleanField("doctest", rustLibraryOptions.doctest.orNull)
-            writeBooleanField("bench", rustLibraryOptions.bench.orNull)
-            writeBooleanField("doc", rustLibraryOptions.doc.orNull)
-            writeBooleanField("procMacro", rustLibraryOptions.procMacro.orNull)
-            writeBooleanField("harness", rustLibraryOptions.harness.orNull)
-            writeArrayField("crate-type", rustLibraryOptions.crateType.get())
-            //This has no effect on [lib], but we let the user make that mistake
-            writeArrayField("required-features", rustLibraryOptions.requiredFeatures.get())
+        rustLibraryOptions.firstOrNull()?.let {
+            content.writeTargetConfiguration("lib", it, cargoToml)
         }
 
-        val rustBinariesOptions = binaryConfiguration.get().filterNot { it.isExcluded }
+        val rustBinariesOptions = binaryConfiguration.get().filterNot { it.isExcluded || it.isShadow }
 
         rustBinariesOptions.forEach { binary ->
-            content.writeTargetConfiguration("bin", binary, cargoToml)
+            content.writeTargetConfiguration("[bin]", binary, cargoToml)
         }
 
-        val rustExamplesOptions = exampleConfiguration.get().filterNot { it.isExcluded }
+        val rustExamplesOptions = exampleConfiguration.get().filterNot { it.isExcluded || it.isShadow }
 
         rustExamplesOptions.forEach { example ->
-            content.writeTargetConfiguration("example", example, cargoToml)
+            content.writeTargetConfiguration("[example]", example, cargoToml)
         }
 
-        val rustTestsOptions = testConfiguration.get().filterNot { it.isExcluded }
+        val rustTestsOptions = testConfiguration.get().filterNot { it.isExcluded || it.isShadow }
 
         rustTestsOptions.forEach { test ->
-            content.writeTargetConfiguration("test", test, cargoToml)
+            content.writeTargetConfiguration("[test]", test, cargoToml)
         }
 
-        val rustBenchOptions = benchmarkConfiguration.get().filterNot { it.isExcluded }
+        val rustBenchOptions = benchmarkConfiguration.get().filterNot { it.isExcluded || it.isShadow }
 
         rustBenchOptions.forEach { bench ->
-            content.writeTargetConfiguration("bench", bench, cargoToml)
+            content.writeTargetConfiguration("[bench]", bench, cargoToml)
         }
 
         //TODO: Resolve custom registries
@@ -312,8 +289,41 @@ abstract class CargoManifestGenerate @Inject constructor(): DefaultTask() {
         cargoToml.writeText(content.removePrefix("\n").toString())
     }
 
+    private fun StringBuilder.writeProfileConfiguration(name: String, configuration: GenericProfileConfiguration) {
+        if(!configuration.isUsed()) return
+
+        writeTable(name) {
+            configuration.optLevel.orNull?.let {
+                val key = "opt-level"
+                when(it) {
+                    OptLevel.z,
+                    OptLevel.s -> writeField(key, it.name)
+                    OptLevel.zero -> writeNumberField(key, 0)
+                    OptLevel.one -> writeNumberField(key, 1)
+                    OptLevel.two -> writeNumberField(key, 2)
+                    OptLevel.three -> writeNumberField(key, 3)
+                }
+            }
+            writeField("debug", configuration.debug.orNull?.name?.replace('_', '-'))
+            writeField("split-debuginfo", configuration.splitDebugInfo.orNull)
+            writeField("strip", configuration.strip.orNull?.name)
+            writeBooleanField("debug-assertions", configuration.debugAssertions.orNull)
+            writeBooleanField("overflow-checks", configuration.overflowChecks.orNull)
+            writeField("lto", configuration.lto.orNull?.name)
+            writeField("panic", configuration.panic.orNull?.name)
+            writeBooleanField("incremental", configuration.incremental.orNull)
+            writeNumberField("codegen-units", configuration.codegenUnits.orNull)
+            writeBooleanField("rpath", configuration.rpath.orNull)
+        }
+    }
+
     private fun StringBuilder.writeTargetConfiguration(name: String, configuration: CargoTargetConfiguration, cargoToml: File) {
-        writeTable("[$name]") {
+        if(!configuration.isEnabled && (!configuration.path.isPresent || !configuration.path.get().asFile.exists())) {
+            val type = configuration.javaClass.name.substringAfterLast(".").substringBefore("Configuration")
+            val errorMessage = "Target with type $type and name $name cannot be found at the expected location: '${configuration.currentDirectory.asFile.path}' as $name.rs or $name${File.separator}main.rs"
+            throw IllegalArgumentException(errorMessage + if(name == "lib") " or lib.rs" else "")
+        }
+        writeTable(name) {
             writeField("name", configuration.actualName)
             writeField("path", configuration.path.get().relativeToManifest(cargoToml))
             writeBooleanField("test", configuration.test.orNull)

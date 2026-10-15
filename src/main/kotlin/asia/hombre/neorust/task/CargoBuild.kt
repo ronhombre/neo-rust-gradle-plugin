@@ -18,7 +18,7 @@
 
 package asia.hombre.neorust.task
 
-import asia.hombre.neorust.internal.CargoTargettedTask
+import asia.hombre.neorust.internal.task.CargoTargettedTask
 import asia.hombre.neorust.option.CargoMessageFormat
 import asia.hombre.neorust.option.CargoTiming
 import org.gradle.api.provider.ListProperty
@@ -47,7 +47,7 @@ abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     abstract val release: Property<Boolean>
     @get:Input
     @get:Optional
-    abstract val profile: Property<String>
+    abstract val profile: Property<String> //TODO: Allow resolving profiles based on the profiles section in the DSL
     @get:Input
     @get:Optional
     abstract val timings: Property<CargoTiming>
@@ -60,9 +60,6 @@ abstract class CargoBuild @Inject constructor(): CargoTargettedTask() {
     @get:Input
     @get:Optional
     abstract val buildAll: Property<Boolean>
-    @get:Input
-    @get:Optional
-    abstract val futureIncompatReport: Property<Boolean>
 
     override fun getInitialArgs(): List<String> {
         return (super.getInitialArgs() as MutableList<String>).apply {
